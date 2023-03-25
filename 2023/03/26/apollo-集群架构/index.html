@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+
+    
+
+    
+
+
+
+    <meta charset="utf-8">
+    
+    
+    
+    
+    <title>apollo 集群架构 | Jerry Chan</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    
+    <meta name="theme-color" content="#3F51B5">
+    
+    
+    <meta name="keywords" content="apollo">
+    <meta name="description" content="apollo 集群架构apollo 组成结构apollo 集群主要有三个部分组成，config-service，admin-service，portal  config-service: 主要为应用客户端提供服务，包括配置的读取、推送等功能，config-service 内置 eureka，已提供 admin-service, portal 的服务发现、服务注册 admin-service: 主要">
+<meta property="og:type" content="article">
+<meta property="og:title" content="apollo 集群架构">
+<meta property="og:url" content="http://example.com/2023/03/26/apollo-%E9%9B%86%E7%BE%A4%E6%9E%B6%E6%9E%84/index.html">
+<meta property="og:site_name" content="Jerry Chan">
+<meta property="og:description" content="apollo 集群架构apollo 组成结构apollo 集群主要有三个部分组成，config-service，admin-service，portal  config-service: 主要为应用客户端提供服务，包括配置的读取、推送等功能，config-service 内置 eureka，已提供 admin-service, portal 的服务发现、服务注册 admin-service: 主要">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/283b123b3a2d818fb3f732c9a1b75a5d.png">
+<meta property="article:published_time" content="2023-03-25T18:25:23.000Z">
+<meta property="article:modified_time" content="2023-03-25T18:32:51.362Z">
+<meta property="article:author" content="Jerry Chan">
+<meta property="article:tag" content="apollo">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/283b123b3a2d818fb3f732c9a1b75a5d.png">
+    
+        <link rel="alternate" type="application/atom+xml" title="Jerry Chan" href="/atom.xml">
+    
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="stylesheet" href="//unpkg.com/hexo-theme-material-indigo@latest/css/style.css">
+    <script>window.lazyScripts=[]</script>
+
+    <!-- custom head -->
+    
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body>
+    <div id="loading" class="active"></div>
+
+    <aside id="menu" class="hide" >
+  <div class="inner flex-row-vertical">
+    <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="menu-off">
+        <i class="icon icon-lg icon-close"></i>
+    </a>
+    <div class="brand-wrap" style="background-image:url(/img/brand.jpg)">
+      <div class="brand">
+        <a href="/" class="avatar waves-effect waves-circle waves-light">
+          <img src="/img/avatar.jpg">
+        </a>
+        <hgroup class="introduce">
+          <h5 class="nickname">Jerry Chan</h5>
+          <a href="mailto:jerrtqtqcjl@gmail.com" title="jerrtqtqcjl@gmail.com" class="mail">jerrtqtqcjl@gmail.com</a>
+        </hgroup>
+      </div>
+    </div>
+    <div class="scroll-wrap flex-col">
+      <ul class="nav">
+        
+            <li class="waves-block waves-effect">
+              <a href="/"  >
+                <i class="icon icon-lg icon-home"></i>
+                主页
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/archives"  >
+                <i class="icon icon-lg icon-archives"></i>
+                归档
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/tags"  >
+                <i class="icon icon-lg icon-tags"></i>
+                标签
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/categories"  >
+                <i class="icon icon-lg icon-th-list"></i>
+                目录
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="https://github.com/JerryQTQcjl" target="_blank" >
+                <i class="icon icon-lg icon-github"></i>
+                Github
+              </a>
+            </li>
+        
+      </ul>
+    </div>
+  </div>
+</aside>
+
+    <main id="main">
+        <header class="top-header" id="header">
+    <div class="flex-row">
+        <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light on" id="menu-toggle">
+          <i class="icon icon-lg icon-navicon"></i>
+        </a>
+        <div class="flex-col header-title ellipsis">apollo 集群架构</div>
+        
+        <div class="search-wrap" id="search-wrap">
+            <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="back">
+                <i class="icon icon-lg icon-chevron-left"></i>
+            </a>
+            <input type="text" id="key" class="search-input" autocomplete="off" placeholder="输入感兴趣的关键字">
+            <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="search">
+                <i class="icon icon-lg icon-search"></i>
+            </a>
+        </div>
+        
+        
+        <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="menuShare">
+            <i class="icon icon-lg icon-share-alt"></i>
+        </a>
+        
+    </div>
+</header>
+<header class="content-header post-header">
+
+    <div class="container fade-scale">
+        <h1 class="title">apollo 集群架构</h1>
+        <h5 class="subtitle">
+            
+                <time datetime="2023-03-25T18:25:23.000Z" itemprop="datePublished" class="page-time">
+  2023-03-26
+</time>
+
+
+            
+        </h5>
+    </div>
+
+    
+
+
+</header>
+
+
+<div class="container body-wrap">
+    
+    <aside class="post-widget">
+        <nav class="post-toc-wrap post-toc-shrink" id="post-toc">
+            <h4>TOC</h4>
+            <ol class="post-toc"><li class="post-toc-item post-toc-level-1"><a class="post-toc-link" href="#apollo-集群架构"><span class="post-toc-number">1.</span> <span class="post-toc-text">apollo 集群架构</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#apollo-组成结构"><span class="post-toc-number">1.0.1.</span> <span class="post-toc-text">apollo 组成结构</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#apollo-部署方案"><span class="post-toc-number">1.0.2.</span> <span class="post-toc-text">apollo 部署方案</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#docker-compose-部署-apollo-集群"><span class="post-toc-number">1.0.3.</span> <span class="post-toc-text">docker-compose 部署 apollo 集群</span></a></li></ol></li></ol></li></ol>
+        </nav>
+    </aside>
+
+
+<article id="post-apollo-集群架构"
+  class="post-article article-type-post fade" itemprop="blogPost">
+
+    <div class="post-card">
+        <h1 class="post-card-title">apollo 集群架构</h1>
+        <div class="post-meta">
+            <time class="post-time" title="2023-03-26 02:25:23" datetime="2023-03-25T18:25:23.000Z"  itemprop="datePublished">2023-03-26</time>
+
+            
+
+
+            
+<span id="busuanzi_container_page_pv" title="文章总阅读量" style='display:none'>
+    <i class="icon icon-eye icon-pr"></i><span id="busuanzi_value_page_pv"></span>
+</span>
+
+
+        </div>
+        <div class="post-content" id="post-content" itemprop="postContent">
+            <h1 id="apollo-集群架构"><a href="#apollo-集群架构" class="headerlink" title="apollo 集群架构"></a>apollo 集群架构</h1><h3 id="apollo-组成结构"><a href="#apollo-组成结构" class="headerlink" title="apollo 组成结构"></a>apollo 组成结构</h3><p>apollo 集群主要有三个部分组成，config-service，admin-service，portal</p>
+<ul>
+<li>config-service: 主要为应用客户端提供服务，包括配置的读取、推送等功能，config-service 内置 eureka，已提供 admin-service, portal 的服务发现、服务注册</li>
+<li>admin-service: 主要为 apollo-portal 提供服务，包括应用配置管理、发布等功能</li>
+<li>portal: 是 apollo 提供的服务配置前端页面</li>
+</ul>
+<h3 id="apollo-部署方案"><a href="#apollo-部署方案" class="headerlink" title="apollo 部署方案"></a>apollo 部署方案</h3><p><img src="/images/283b123b3a2d818fb3f732c9a1b75a5d.png" alt="截图" style="zoom:100%" />这个官网提供的高可用双环境架构，更多的架构方案可<a href="https://www.apolloconfig.com/#/zh/deployment/deployment-architecture?id=_34-%e9%ab%98%e5%8f%af%e7%94%a8%ef%bc%8c%e5%a4%9a%e4%b8%aa%e7%8e%af%e5%a2%83" target="_blank" rel="noopener">参考</a></p>
+<h3 id="docker-compose-部署-apollo-集群"><a href="#docker-compose-部署-apollo-集群" class="headerlink" title="docker-compose 部署 apollo 集群"></a>docker-compose 部署 apollo 集群</h3><ol>
+<li>执行 <a href="https://github.com/apolloconfig/apollo-quick-start/tree/master/sql" target="_blank" rel="noopener">sql 脚本</a>，生成 apollo 需要的 db 表</li>
+<li>编写 docker-compose 文件，本次只搭建开发环境模拟单机单环境，config-service，admin-service，portal 都各自部署一个容器</li>
+</ol>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">version:</span> <span class="string">'2'</span></span><br><span class="line"><span class="attr">networks:</span></span><br><span class="line">  <span class="attr">net:</span></span><br><span class="line"></span><br><span class="line"><span class="attr">services:</span></span><br><span class="line">  <span class="comment">#开发环境configService，eureka</span></span><br><span class="line">  <span class="attr">apollo-configservice-dev:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">apolloconfig/apollo-configservice</span></span><br><span class="line">    <span class="attr">container_name:</span> <span class="string">configservice-dev</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="number">8080</span><span class="string">:8080</span></span><br><span class="line">    <span class="attr">environment:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">SPRING_DATASOURCE_URL=jdbc:mysql://192.168.0.103:3306/ApolloConfigDB?characterEncoding=utf8</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">SPRING_DATASOURCE_USERNAME=root</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">SPRING_DATASOURCE_PASSWORD=123456</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">eureka.instance.ip-address=192.168.0.103</span></span><br><span class="line">    <span class="attr">networks:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">net</span></span><br><span class="line"></span><br><span class="line">  <span class="attr">apollo-adminservice-dev:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">apolloconfig/apollo-adminservice</span></span><br><span class="line">    <span class="attr">container_name:</span> <span class="string">adminservice-dev</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="number">8090</span><span class="string">:8090</span></span><br><span class="line">    <span class="attr">environment:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">SPRING_DATASOURCE_URL=jdbc:mysql://192.168.0.103:3306/ApolloConfigDB?characterEncoding=utf8</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">SPRING_DATASOURCE_USERNAME=root</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">SPRING_DATASOURCE_PASSWORD=123456</span></span><br><span class="line">      <span class="comment">#这里需要配置开环环境的configService</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">eureka.service.url=http://configservice-dev:8080/eureka/</span></span><br><span class="line">    <span class="attr">depends_on:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">apollo-configservice-dev</span></span><br><span class="line">    <span class="attr">networks:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">net</span></span><br><span class="line"></span><br><span class="line">  <span class="attr">apollo-portal:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">apolloconfig/apollo-portal</span></span><br><span class="line">    <span class="attr">container_name:</span> <span class="string">apollo-portal</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="number">8070</span><span class="string">:8070</span></span><br><span class="line">    <span class="attr">environment:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">SPRING_DATASOURCE_URL=jdbc:mysql://192.168.0.103:3306/ApolloPortalDB?characterEncoding=utf8</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">SPRING_DATASOURCE_USERNAME=root</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">SPRING_DATASOURCE_PASSWORD=123456</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">spring.profiles.active=auth</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">APOLLO_PORTAL_ENVS=dev,fat,pre,gray,pro</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">DEV_META=http://configservice-dev:8080</span></span><br><span class="line">      <span class="comment"># 以下这些暂时使用开发环境的</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">FAT_META=http://configservice-dev:8080</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">PRE_META=http://configservice-dev:8080</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">GRAY_META=http://configservice-dev:8080</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">PRO_META=http://configservice-dev:8080</span></span><br><span class="line">    <span class="attr">depends_on:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">apollo-adminservice-dev</span></span><br><span class="line">    <span class="attr">networks:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">net</span></span><br></pre></td></tr></table></figure>
+
+        </div>
+
+        <blockquote class="post-copyright">
+    
+    <div class="content">
+        
+<span class="post-time">
+    最后更新时间：<time datetime="2023-03-25T18:32:51.362Z" itemprop="dateUpdated">2023-03-26 02:32:51</time>
+</span><br>
+
+
+        
+    </div>
+    
+    <footer>
+        <a href="http://example.com">
+            <img src="/img/avatar.jpg" alt="Jerry Chan">
+            Jerry Chan
+        </a>
+    </footer>
+</blockquote>
+
+        
+
+
+        <div class="post-footer">
+            
+	<ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/apollo/" rel="tag">apollo</a></li></ul>
+
+
+            
+<div class="page-share-wrap">
+    
+
+<div class="page-share" id="pageShare">
+    <ul class="reset share-icons">
+      <li>
+        <a class="weibo share-sns" target="_blank" href="http://service.weibo.com/share/share.php?url=http://example.com/2023/03/26/apollo-%E9%9B%86%E7%BE%A4%E6%9E%B6%E6%9E%84/&title=《apollo 集群架构》 — Jerry Chan&pic=http://example.com/img/avatar.jpg" data-title="微博">
+          <i class="icon icon-weibo"></i>
+        </a>
+      </li>
+      <li>
+        <a class="weixin share-sns wxFab" href="javascript:;" data-title="微信">
+          <i class="icon icon-weixin"></i>
+        </a>
+      </li>
+      <li>
+        <a class="qq share-sns" target="_blank" href="http://connect.qq.com/widget/shareqq/index.html?url=http://example.com/2023/03/26/apollo-%E9%9B%86%E7%BE%A4%E6%9E%B6%E6%9E%84/&title=《apollo 集群架构》 — Jerry Chan&source=" data-title=" QQ">
+          <i class="icon icon-qq"></i>
+        </a>
+      </li>
+      <li>
+        <a class="facebook share-sns" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http://example.com/2023/03/26/apollo-%E9%9B%86%E7%BE%A4%E6%9E%B6%E6%9E%84/" data-title=" Facebook">
+          <i class="icon icon-facebook"></i>
+        </a>
+      </li>
+      <li>
+        <a class="twitter share-sns" target="_blank" href="https://twitter.com/intent/tweet?text=《apollo 集群架构》 — Jerry Chan&url=http://example.com/2023/03/26/apollo-%E9%9B%86%E7%BE%A4%E6%9E%B6%E6%9E%84/&via=http://example.com" data-title=" Twitter">
+          <i class="icon icon-twitter"></i>
+        </a>
+      </li>
+      <li>
+        <a class="google share-sns" target="_blank" href="https://plus.google.com/share?url=http://example.com/2023/03/26/apollo-%E9%9B%86%E7%BE%A4%E6%9E%B6%E6%9E%84/" data-title=" Google+">
+          <i class="icon icon-google-plus"></i>
+        </a>
+      </li>
+    </ul>
+ </div>
+
+
+
+    <a href="javascript:;" id="shareFab" class="page-share-fab waves-effect waves-circle">
+        <i class="icon icon-share-alt icon-lg"></i>
+    </a>
+</div>
+
+
+
+        </div>
+    </div>
+
+    
+<nav class="post-nav flex-row flex-justify-between flex-row-reverse">
+  
+
+  
+    <div class="waves-block waves-effect next">
+      <a href="/2023/03/26/consul-%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA%E5%8F%8A%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9/" id="post-next" class="post-nav-link">
+        <div class="tips">Next <i class="icon icon-angle-right icon-lg icon-pl"></i></div>
+        <h4 class="title">consul 集群搭建及注意事项</h4>
+      </a>
+    </div>
+  
+</nav>
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</article>
+
+
+
+</div>
+
+        <footer class="footer">
+    <div class="top">
+        
+<p>
+    <span id="busuanzi_container_site_uv" style='display:none'>
+        站点总访客数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span id="busuanzi_container_site_pv" style='display:none'>
+        站点总访问量：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</p>
+
+
+        <p>
+            
+                <span><a href="/atom.xml" target="_blank" class="rss" title="rss"><i class="icon icon-lg icon-rss"></i></a></span>
+            
+            <span>博客内容遵循 <a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" target="_blank">知识共享 署名 - 非商业性 - 相同方式共享 4.0 国际协议</a></span>
+        </p>
+    </div>
+    <div class="bottom">
+        <p><span>Jerry Chan &copy; 2023</span>
+            <span>
+                
+                Power by <a href="http://hexo.io/" target="_blank">Hexo</a> Theme <a href="https://github.com/yscoder/hexo-theme-indigo" target="_blank">indigo</a>
+            </span>
+        </p>
+    </div>
+</footer>
+
+    </main>
+    <div class="mask" id="mask"></div>
+<a href="javascript:;" id="gotop" class="waves-effect waves-circle waves-light"><span class="icon icon-lg icon-chevron-up"></span></a>
+
+
+
+<div class="global-share" id="globalShare">
+    <ul class="reset share-icons">
+      <li>
+        <a class="weibo share-sns" target="_blank" href="http://service.weibo.com/share/share.php?url=http://example.com/2023/03/26/apollo-%E9%9B%86%E7%BE%A4%E6%9E%B6%E6%9E%84/&title=《apollo 集群架构》 — Jerry Chan&pic=http://example.com/img/avatar.jpg" data-title="微博">
+          <i class="icon icon-weibo"></i>
+        </a>
+      </li>
+      <li>
+        <a class="weixin share-sns wxFab" href="javascript:;" data-title="微信">
+          <i class="icon icon-weixin"></i>
+        </a>
+      </li>
+      <li>
+        <a class="qq share-sns" target="_blank" href="http://connect.qq.com/widget/shareqq/index.html?url=http://example.com/2023/03/26/apollo-%E9%9B%86%E7%BE%A4%E6%9E%B6%E6%9E%84/&title=《apollo 集群架构》 — Jerry Chan&source=" data-title=" QQ">
+          <i class="icon icon-qq"></i>
+        </a>
+      </li>
+      <li>
+        <a class="facebook share-sns" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http://example.com/2023/03/26/apollo-%E9%9B%86%E7%BE%A4%E6%9E%B6%E6%9E%84/" data-title=" Facebook">
+          <i class="icon icon-facebook"></i>
+        </a>
+      </li>
+      <li>
+        <a class="twitter share-sns" target="_blank" href="https://twitter.com/intent/tweet?text=《apollo 集群架构》 — Jerry Chan&url=http://example.com/2023/03/26/apollo-%E9%9B%86%E7%BE%A4%E6%9E%B6%E6%9E%84/&via=http://example.com" data-title=" Twitter">
+          <i class="icon icon-twitter"></i>
+        </a>
+      </li>
+      <li>
+        <a class="google share-sns" target="_blank" href="https://plus.google.com/share?url=http://example.com/2023/03/26/apollo-%E9%9B%86%E7%BE%A4%E6%9E%B6%E6%9E%84/" data-title=" Google+">
+          <i class="icon icon-google-plus"></i>
+        </a>
+      </li>
+    </ul>
+ </div>
+
+
+<div class="page-modal wx-share" id="wxShare">
+    <a class="close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAN4AAADeCAAAAAB3DOFrAAACx0lEQVR42u3aQY4bMQwEQP//0xsgpwDJrLtJCU6CmtPC9o6ndBDppl6v+Pr6eT298vu7yWe+frmSb08+Obzw8PDwRo/+dD19wdO7s9f3d35cAjw8PLxrvGRbf3Ojb4vB9/874yUFDA8PD++zvKRfnb3etvV4eHh4/y6vjQzw8PDw/ifeLCDIqUm00QYWh7MWPDw8vJi32ZQ/9ffF+R4eHh7eYqqeBK9JwJrEvnmMWzwtHh4e3gXebMjURgzt6GtW34pfDHh4eHiHePkRgX2kOysVeav9h8KAh4eHd4iXB6CzIHXGS8Za0Z3x8PDwLvDaGrI5PpUP+/O2O7onHh4e3lFeHgTkg/w2zG0PDRSlBQ8PD+8CLwfPhk+bhcgXtzhkgIeHh7fm5fHorM2dteBJqYjadDw8PLwLvDaAaB/6RgPdFh48PDy8G7wkmNh8cbJ9z9roAzEEHh4e3iFeHkbkxwI2AXFbhN4UBjw8PLwFLx+AtWOnPOCYHR2I8Hh4eHjXePnWnGzrm4XIS1SdUuPh4eFd421+6efHAvIYt23f3xQGPDw8vDVvNgBLvqDd4veL+HhnPDw8vKO8dsiUHylI8Hk8MWzT8fDw8C7wVvUk3u7zprk9oHCzXOLh4eGdbIjbo1GzQCE/dhCVBDw8PLxDvORBZ+Ox/GjUrDVvixMeHh7eKV7LyDfoWYybRyHRkuHh4eFd5m1+0ecBQf6IbVzyyqsTHh4e3oLX/rDPw4sW3LbsbSCCh4eHd4q3CSDy+DX537wgFdEzHh4e3gVee7xgcwxrFuy2w7nV6Qk8PDy8mDcrBnkLni9cHnwUgzc8PDy8a7x202+PHcwa5f0C4eHh4X2W146m2vCiHdFFy4GHh4f31/Bmx6fycVceW1wpDHh4eHgB70YrnIzEZk15ETrj4eHhXeBtBmDJmCoH55HEcI6Hh4eHt+X9ALWMkpcIo4DKAAAAAElFTkSuQmCC" alt="微信分享二维码">
+</div>
+
+
+
+
+    <script src="//cdn.bootcss.com/node-waves/0.7.4/waves.min.js"></script>
+<script>
+var BLOG = { ROOT: '/', SHARE: true, REWARD: false };
+
+
+</script>
+
+<script src="//unpkg.com/hexo-theme-material-indigo@latest/js/main.min.js"></script>
+
+
+<div class="search-panel" id="search-panel">
+    <ul class="search-result" id="search-result"></ul>
+</div>
+<template id="search-tpl">
+<li class="item">
+    <a href="{path}" class="waves-block waves-effect">
+        <div class="title ellipsis" title="{title}">{title}</div>
+        <div class="flex-row flex-middle">
+            <div class="tags ellipsis">
+                {tags}
+            </div>
+            <time class="flex-col time">{date}</time>
+        </div>
+    </a>
+</li>
+</template>
+
+<script src="//unpkg.com/hexo-theme-material-indigo@latest/js/search.min.js" async></script>
+
+
+
+
+
+
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+<script>
+(function() {
+    var OriginTitile = document.title, titleTime;
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            document.title = '大爷别走呀！';
+            clearTimeout(titleTime);
+        } else {
+            document.title = '来啦，老弟!';
+            titleTime = setTimeout(function() {
+                document.title = OriginTitile;
+            },2000);
+        }
+    });
+})();
+</script>
+
+
+
+</body>
+</html>
