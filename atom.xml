@@ -6,7 +6,7 @@
   <link href="http://example.com/atom.xml" rel="self"/>
   
   <link href="http://example.com/"/>
-  <updated>2023-03-31T15:46:40.276Z</updated>
+  <updated>2023-04-03T07:08:41.908Z</updated>
   <id>http://example.com/</id>
   
   <author>
@@ -15,6 +15,33 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>wireshark 抓包 java应用中的 https 请求</title>
+    <link href="http://example.com/2023/04/03/wireshark-%E6%8A%93%E5%8C%85-java%E5%BA%94%E7%94%A8%E4%B8%AD%E7%9A%84-https-%E8%AF%B7%E6%B1%82/"/>
+    <id>http://example.com/2023/04/03/wireshark-%E6%8A%93%E5%8C%85-java%E5%BA%94%E7%94%A8%E4%B8%AD%E7%9A%84-https-%E8%AF%B7%E6%B1%82/</id>
+    <published>2023-04-03T07:08:41.000Z</published>
+    <updated>2023-04-03T07:08:41.908Z</updated>
+    
+    <content type="html"><![CDATA[<blockquote><p>最近生产中请求第三方接口的服务频繁告警，接口响应过慢，我们这边使用的 httpclient 连接池，各项配置看起来都没太大的问题，于是就想着说抓包看看是否有网络层面的问题还是的确是第三方接口慢。</p></blockquote><h2 id="通过-jsslkeylog-获取-sslkeylog"><a href="#通过-jsslkeylog-获取-sslkeylog" class="headerlink" title="通过 jsslkeylog 获取 sslkeylog"></a>通过 <a href="https://github.com/jsslkeylog/jsslkeylog" target="_blank" rel="noopener">jsslkeylog</a> 获取 sslkeylog</h2><h3 id="wireshark-中-https-显示密文的样子"><a href="#wireshark-中-https-显示密文的样子" class="headerlink" title="wireshark 中 https 显示密文的样子"></a>wireshark 中 https 显示密文的样子</h3><p>有用过 wireshark 抓包 https 的大佬应该都知道，https 是有加密的，直接用 wireshark 抓包展示的全都是密文，如下图：<br><img src="/images/9e5440f2db4de1185099e8c1e91edfc.png" alt="截图" style="zoom:100%"><br>可以看到，具体的 https 请求数据都被加密了。</p><h3 id="如何让-https-在-wireshark-显示明文"><a href="#如何让-https-在-wireshark-显示明文" class="headerlink" title="如何让 https 在 wireshark 显示明文"></a>如何让 https 在 wireshark 显示明文</h3><p>wireshark 中解密 https 请求的<a href="https://www.cnblogs.com/yurang/p/11505741.html" target="_blank" rel="noopener">方式</a>有多种，这里使用的方式是获取 https 请求时的 sslkeylog，使用到了一个 javaagent 工具 <a href="https://github.com/jsslkeylog/jsslkeylog" target="_blank" rel="noopener">jsslkeylog</a>，通过修改字节码达到发送 https 请求时将使用到的 sslkeylog 写入到本地磁盘的效果。<br>具体流程也很简单：<br>1、下载 jsslkeylog jar 包<br>2、启动命令中加入 -javaagent:/path_to_jar/jSSLKeyLog.jar=/path_to_log/sslkeylog.log<br>3、启动应用发起 https 请求<br>4、之后应该就会在配置的 /path_to_log 中看到对应的 sslkeylog<br><img src="/images/05a6bf5febf9f1b4673920a5d1697bdc.png" alt="截图" style="zoom:100%"><br>5、之后将 log 配置到 wireshark 中，prfferences -&gt; protocols -&gt; tls<br><img src="/images/3b0485a52fcfe450902e8cb06b8b3ca1.png" alt="截图" style="zoom:100%"><br>配置完成之后，就能看到原本的密文已经变成明文了，之后就能愉快的分析了🌝<br><img src="/images/ba3709b43b60602fc22efe0525515d0e.png" alt="截图" style="zoom:100%"></p>]]></content>
+    
+    
+      
+      
+    <summary type="html">&lt;blockquote&gt;
+&lt;p&gt;最近生产中请求第三方接口的服务频繁告警，接口响应过慢，我们这边使用的 httpclient 连接池，各项配置看起来都没太大的问题，于是就想着说抓包看看是否有网络层面的问题还是的确是第三方接口慢。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&quot;</summary>
+      
+    
+    
+    
+    
+    <category term="java" scheme="http://example.com/tags/java/"/>
+    
+    <category term="计算机网络" scheme="http://example.com/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/"/>
+    
+  </entry>
   
   <entry>
     <title>k8s 搭建</title>
