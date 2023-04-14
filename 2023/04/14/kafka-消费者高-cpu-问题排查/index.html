@@ -37,7 +37,7 @@
 <meta property="og:image" content="http://example.com/images/16814578551784.png">
 <meta property="og:image" content="http://example.com/images/16b2e8bc-06a3-4166-bf25-6815077beb93.png">
 <meta property="article:published_time" content="2023-04-14T15:31:22.000Z">
-<meta property="article:modified_time" content="2023-04-14T15:37:46.165Z">
+<meta property="article:modified_time" content="2023-04-14T15:48:38.289Z">
 <meta property="article:author" content="Jerry Chan">
 <meta property="article:tag" content="kafka">
 <meta name="twitter:card" content="summary">
@@ -218,11 +218,11 @@
 <p>接着就是一波虾皮操作，显示生成了火焰图，看看 consumer poll 到底为啥一直占用 cpu，下面是一张火焰图：</p>
 <img src="/images/6a2a9517-818a-4a3e-a9be-2b5b40dac23e.png" alt="截图" style="zoom:100%">
 
-<p>虽然 poll 方法占用 cpu 耗时很长，但是仔细看又觉得没啥问题，是正常的才处理网络请求，这个时候我甚至一度怀疑是 kafka 客户端的 bug 😂。</p>
+<p>虽然 poll 方法占用 cpu 耗时很长，但是仔细看又觉得没啥问题，是正常的在处理网络请求，这个时候我甚至一度怀疑是 kafka 客户端的 bug 😂。</p>
 <h3 id="有耐心问题迟早能解决"><a href="#有耐心问题迟早能解决" class="headerlink" title="有耐心问题迟早能解决"></a>有耐心问题迟早能解决</h3><p>还记的我们之前提了一嘴那张截图吗，没错就是下面这张</p>
 <img src="/images/2ebfeb48-41ce-460f-bd4e-14ef2824b82e.png" alt="截图" style="zoom:100%">
 
-<p>图中 lag 出现负数，其实 lag 出现负数还是很常见的，但问题就出现我排查了这么久图中的 lag 好像没变化过，而且一直是负数，那就很值得注意了。</p>
+<p>图中 lag 出现负数，其实 lag 出现负数还是很常见的，但问题就出在我排查了这么久图中的 lag 好像没变化过，而且一直是负数，那就很值得注意了。</p>
 <p>我们还是先说说 lag 是怎么计算的</p>
 <figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lag = HW - consumerOffset</span><br></pre></td></tr></table></figure>
 
@@ -255,7 +255,7 @@
     <div class="content">
         
 <span class="post-time">
-    最后更新时间：<time datetime="2023-04-14T15:37:46.165Z" itemprop="dateUpdated">2023-04-14 23:37:46</time>
+    最后更新时间：<time datetime="2023-04-14T15:48:38.289Z" itemprop="dateUpdated">2023-04-14 23:48:38</time>
 </span><br>
 
 
