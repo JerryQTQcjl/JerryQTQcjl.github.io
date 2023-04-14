@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+
+    
+
+    
+
+
+
+    <meta charset="utf-8">
+    
+    
+    
+    
+    <title>kafka 消费者高 cpu 问题排查 | Jerry Chan</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    
+    <meta name="theme-color" content="#3F51B5">
+    
+    
+    <meta name="keywords" content="kafka">
+    <meta name="description" content="今天本来打算愉快的划水，运维小哥突然找我说测试环境应用 cpu 一直居高不下，我一看告警还真是…  cpu 高问题排查思路首先还是老套路： 先查看 cpu 高的线程是哪些  1top -Hp &lt;pid&gt;     查看线程的堆栈信息  12345&#x2F;&#x2F;将线程 id 转换为 16 进制printf &#39;%x\n&#39; &lt;tid&gt;&#x2F;&#x2F;获取线程号后 50 行堆栈信息jstack &lt;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="kafka 消费者高 cpu 问题排查">
+<meta property="og:url" content="http://example.com/2023/04/14/kafka-%E6%B6%88%E8%B4%B9%E8%80%85%E9%AB%98-cpu-%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/index.html">
+<meta property="og:site_name" content="Jerry Chan">
+<meta property="og:description" content="今天本来打算愉快的划水，运维小哥突然找我说测试环境应用 cpu 一直居高不下，我一看告警还真是…  cpu 高问题排查思路首先还是老套路： 先查看 cpu 高的线程是哪些  1top -Hp &lt;pid&gt;     查看线程的堆栈信息  12345&#x2F;&#x2F;将线程 id 转换为 16 进制printf &#39;%x\n&#39; &lt;tid&gt;&#x2F;&#x2F;获取线程号后 50 行堆栈信息jstack &lt;">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/9a05c976-5255-48db-918a-2cf6e7f8047d.png">
+<meta property="og:image" content="http://example.com/images/dccda0a5-30a3-443e-a5b7-62ba3f83d12d.png">
+<meta property="og:image" content="http://example.com/images/2ebfeb48-41ce-460f-bd4e-14ef2824b82e.png">
+<meta property="og:image" content="http://example.com/images/6a2a9517-818a-4a3e-a9be-2b5b40dac23e.png">
+<meta property="og:image" content="http://example.com/images/2ebfeb48-41ce-460f-bd4e-14ef2824b82e.png">
+<meta property="og:image" content="http://example.com/images/382ce5cb-4dfe-481f-88ca-fc2cd9313431.png">
+<meta property="og:image" content="http://example.com/images/16814578551784.png">
+<meta property="og:image" content="http://example.com/images/16b2e8bc-06a3-4166-bf25-6815077beb93.png">
+<meta property="article:published_time" content="2023-04-14T15:31:22.000Z">
+<meta property="article:modified_time" content="2023-04-14T15:37:46.165Z">
+<meta property="article:author" content="Jerry Chan">
+<meta property="article:tag" content="kafka">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/9a05c976-5255-48db-918a-2cf6e7f8047d.png">
+    
+        <link rel="alternate" type="application/atom+xml" title="Jerry Chan" href="/atom.xml">
+    
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="stylesheet" href="//unpkg.com/hexo-theme-material-indigo@latest/css/style.css">
+    <script>window.lazyScripts=[]</script>
+
+    <!-- custom head -->
+    
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body>
+    <div id="loading" class="active"></div>
+
+    <aside id="menu" class="hide" >
+  <div class="inner flex-row-vertical">
+    <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="menu-off">
+        <i class="icon icon-lg icon-close"></i>
+    </a>
+    <div class="brand-wrap" style="background-image:url(/img/brand.jpg)">
+      <div class="brand">
+        <a href="/" class="avatar waves-effect waves-circle waves-light">
+          <img src="/img/avatar.jpg">
+        </a>
+        <hgroup class="introduce">
+          <h5 class="nickname">Jerry Chan</h5>
+          <a href="mailto:jerrtqtqcjl@gmail.com" title="jerrtqtqcjl@gmail.com" class="mail">jerrtqtqcjl@gmail.com</a>
+        </hgroup>
+      </div>
+    </div>
+    <div class="scroll-wrap flex-col">
+      <ul class="nav">
+        
+            <li class="waves-block waves-effect">
+              <a href="/"  >
+                <i class="icon icon-lg icon-home"></i>
+                主页
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/archives"  >
+                <i class="icon icon-lg icon-archives"></i>
+                归档
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/tags"  >
+                <i class="icon icon-lg icon-tags"></i>
+                标签
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/categories"  >
+                <i class="icon icon-lg icon-th-list"></i>
+                目录
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="https://github.com/JerryQTQcjl" target="_blank" >
+                <i class="icon icon-lg icon-github"></i>
+                Github
+              </a>
+            </li>
+        
+      </ul>
+    </div>
+  </div>
+</aside>
+
+    <main id="main">
+        <header class="top-header" id="header">
+    <div class="flex-row">
+        <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light on" id="menu-toggle">
+          <i class="icon icon-lg icon-navicon"></i>
+        </a>
+        <div class="flex-col header-title ellipsis">kafka 消费者高 cpu 问题排查</div>
+        
+        <div class="search-wrap" id="search-wrap">
+            <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="back">
+                <i class="icon icon-lg icon-chevron-left"></i>
+            </a>
+            <input type="text" id="key" class="search-input" autocomplete="off" placeholder="输入感兴趣的关键字">
+            <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="search">
+                <i class="icon icon-lg icon-search"></i>
+            </a>
+        </div>
+        
+        
+        <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="menuShare">
+            <i class="icon icon-lg icon-share-alt"></i>
+        </a>
+        
+    </div>
+</header>
+<header class="content-header post-header">
+
+    <div class="container fade-scale">
+        <h1 class="title">kafka 消费者高 cpu 问题排查</h1>
+        <h5 class="subtitle">
+            
+                <time datetime="2023-04-14T15:31:22.000Z" itemprop="datePublished" class="page-time">
+  2023-04-14
+</time>
+
+
+            
+        </h5>
+    </div>
+
+    
+
+
+</header>
+
+
+<div class="container body-wrap">
+    
+    <aside class="post-widget">
+        <nav class="post-toc-wrap post-toc-shrink" id="post-toc">
+            <h4>TOC</h4>
+            <ol class="post-toc"><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#cpu-高问题排查思路"><span class="post-toc-number">1.</span> <span class="post-toc-text">cpu 高问题排查思路</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-4"><a class="post-toc-link" href="#首先还是老套路："><span class="post-toc-number">1.1.</span> <span class="post-toc-text">首先还是老套路：</span></a></li><li class="post-toc-item post-toc-level-4"><a class="post-toc-link" href="#遇到不懂就问度娘"><span class="post-toc-number">1.2.</span> <span class="post-toc-text">遇到不懂就问度娘</span></a></li></ol></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#有耐心问题迟早能解决"><span class="post-toc-number">2.</span> <span class="post-toc-text">有耐心问题迟早能解决</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#小结"><span class="post-toc-number">3.</span> <span class="post-toc-text">小结</span></a></li></ol>
+        </nav>
+    </aside>
+
+
+<article id="post-kafka-消费者高-cpu-问题排查"
+  class="post-article article-type-post fade" itemprop="blogPost">
+
+    <div class="post-card">
+        <h1 class="post-card-title">kafka 消费者高 cpu 问题排查</h1>
+        <div class="post-meta">
+            <time class="post-time" title="2023-04-14 23:31:22" datetime="2023-04-14T15:31:22.000Z"  itemprop="datePublished">2023-04-14</time>
+
+            
+
+
+            
+<span id="busuanzi_container_page_pv" title="文章总阅读量" style='display:none'>
+    <i class="icon icon-eye icon-pr"></i><span id="busuanzi_value_page_pv"></span>
+</span>
+
+
+        </div>
+        <div class="post-content" id="post-content" itemprop="postContent">
+            <blockquote>
+<p>今天本来打算愉快的划水，运维小哥突然找我说测试环境应用 cpu 一直居高不下，我一看告警还真是…</p>
+</blockquote>
+<h3 id="cpu-高问题排查思路"><a href="#cpu-高问题排查思路" class="headerlink" title="cpu 高问题排查思路"></a>cpu 高问题排查思路</h3><h4 id="首先还是老套路："><a href="#首先还是老套路：" class="headerlink" title="首先还是老套路："></a>首先还是老套路：</h4><ol>
+<li>先查看 cpu 高的线程是哪些</li>
+</ol>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">top -Hp &lt;pid&gt;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/9a05c976-5255-48db-918a-2cf6e7f8047d.png" alt="截图" style="zoom:100%">
+
+<ol start="2">
+<li>查看线程的堆栈信息</li>
+</ol>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">//将线程 id 转换为 16 进制</span><br><span class="line"><span class="built_in">printf</span> <span class="string">'%x\n'</span> &lt;tid&gt;</span><br><span class="line"></span><br><span class="line">//获取线程号后 50 行堆栈信息</span><br><span class="line">jstack &lt;pid&gt; | grep &lt;tid&gt; -A 50</span><br></pre></td></tr></table></figure>
+
+<p>这里我就直接用线程名称去查了。</p>
+<img src="/images/dccda0a5-30a3-443e-a5b7-62ba3f83d12d.png" alt="截图" style="zoom:100%">
+
+<p>看堆栈信息定位到是 kafka 消费者消费消息，导致 cpu 居高不下，正常情况下 kafka 消费者 cpu 飚高都是有大量的消息，我第一个感觉就是测试在进行压测，结果一看，打脸了🤔。</p>
+<img src="/images/2ebfeb48-41ce-460f-bd4e-14ef2824b82e.png" alt="截图" style="zoom:100%">
+
+<p>可以看到，lag 是 0 或者负数，我又刷新了几次基本上没有多少消息，<strong>这里留个心眼，后面我们在好好唠唠</strong>。</p>
+<p>那么问题就来了，没有消息为啥消费者 cpu 会飚高… 突然灵机一动，会不会是消费者数太多了，导致循环去调用 poll 方法，造成整个节点 cpu 飚高。然后就屁颠屁颠的把所有主题的消费者数调小了，然鹅想想很美好，现实很骨感… 重启后节点的 cpu 依然居高不下。</p>
+<h4 id="遇到不懂就问度娘"><a href="#遇到不懂就问度娘" class="headerlink" title="遇到不懂就问度娘"></a>遇到不懂就问度娘</h4><p>在网上逛了一圈，看到许多相似的场景，各种操作都试了一遍，还是没什么用🙃，kafka 的 github 仓库我也去逛了一圈，发现也有很多 cpu 高得场景，大多数都是建议升级客户端版本，忘了说我司目前用的还是 <strong>0.11.2</strong>，总之逛了一圈没有起到太大的帮助。</p>
+<p>接着就是一波虾皮操作，显示生成了火焰图，看看 consumer poll 到底为啥一直占用 cpu，下面是一张火焰图：</p>
+<img src="/images/6a2a9517-818a-4a3e-a9be-2b5b40dac23e.png" alt="截图" style="zoom:100%">
+
+<p>虽然 poll 方法占用 cpu 耗时很长，但是仔细看又觉得没啥问题，是正常的才处理网络请求，这个时候我甚至一度怀疑是 kafka 客户端的 bug 😂。</p>
+<h3 id="有耐心问题迟早能解决"><a href="#有耐心问题迟早能解决" class="headerlink" title="有耐心问题迟早能解决"></a>有耐心问题迟早能解决</h3><p>还记的我们之前提了一嘴那张截图吗，没错就是下面这张</p>
+<img src="/images/2ebfeb48-41ce-460f-bd4e-14ef2824b82e.png" alt="截图" style="zoom:100%">
+
+<p>图中 lag 出现负数，其实 lag 出现负数还是很常见的，但问题就出现我排查了这么久图中的 lag 好像没变化过，而且一直是负数，那就很值得注意了。</p>
+<p>我们还是先说说 lag 是怎么计算的</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lag = HW - consumerOffset</span><br></pre></td></tr></table></figure>
+
+<p><strong>HW: 高水位，通常等于所有 ISR 中最小的 LEO，详细的可以看看<a href="https://www.cnblogs.com/koktlzz/p/14580109.html" target="_blank" rel="noopener">大佬的博客</a></strong></p>
+<p><strong>consumerOffset: 表示消费者提交的消费位移</strong></p>
+<p>那么 lag 为啥会出现负数呢，由于我本身并未看过源码，所以从网上找了一个我认为比较是能说的通的解释:</p>
+<blockquote>
+<p>Producer 的 offset 是通过 JMX 轮询获得的，Consumer 的 offset 是从 kafka 内的 __consumer_offsets 的 topic 中直接读取到的，很明显轮询获取 offset 比 直接从 topic 拿 offset 慢一点，也就可能会出现 Lag 计算后为负数的情况。</p>
+</blockquote>
+<p>OK，回到正题，lag 长时间是负数说明 consumerOffset 一直大于 HW，那么出现这个问题的原因大概率是 HW 一直不更新，因为 HW 只要更新其实 lag 很快就能变回 0。那么 HW 是什么时候更新的呢，<strong>其实是 Follower 副本同步 Leader 副本数据时，Leader 副本会对比 Follower 拉取数据的 offset 和 Leader 自身的 LEO 去更新 HW，所以通常 HW 需要 Follower 多同步一轮才会更新</strong>。</p>
+<p><strong>那么 HW 不更新，只能说明 Follower 没有去同步数据</strong>，想到这，我立马去看了下消费组的副本状态，发现有一个 broker 所有的分区副本都不在 ISR 中。那么基本上确定这个 broker 是出现问题了，但是这和我消费者 cpu 高有什么关系呢？</p>
+<img src="/images/382ce5cb-4dfe-481f-88ca-fc2cd9313431.png" alt="截图" style="zoom:100%">
+
+<p>这时运维小哥告诉我，poll 平均每 3ms 就请求一次，导致 cpu 飚高。纳尼？？？我的 poll timeout 明明是 100ms，怎么 3ms 一次呢，这明显有问题呀，运维小哥发了一下抓包的截图给我：</p>
+<img src="/images/16814578551784.png" alt="截图" style="zoom:100%">
+
+<p><strong>kafka broker response 中提示 Not Leader For Partition</strong>，这不就和上面的猜想对上了吗，看看 chatgpt 给出的解释:</p>
+<img src="/images/16b2e8bc-06a3-4166-bf25-6815077beb93.png" alt="截图" style="zoom:100%">
+
+<p>至此问题就排查了差不多了，那么接下来就是解决。由于是在测试环境发现的，解决方式也很粗暴，就是直接把 topic 直接删除了，然后重新创建。</p>
+<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><ol>
+<li>遇到涉及网络相关的问题，可以抓个包瞧瞧，说不定思路一下就打开了。</li>
+<li>如果实在生产环境遇到这类问题，那么该怎么处理 broker 呢，这个得好好琢磨琢磨，目前思路是从 controller 下手。</li>
+</ol>
+
+        </div>
+
+        <blockquote class="post-copyright">
+    
+    <div class="content">
+        
+<span class="post-time">
+    最后更新时间：<time datetime="2023-04-14T15:37:46.165Z" itemprop="dateUpdated">2023-04-14 23:37:46</time>
+</span><br>
+
+
+        
+    </div>
+    
+    <footer>
+        <a href="http://example.com">
+            <img src="/img/avatar.jpg" alt="Jerry Chan">
+            Jerry Chan
+        </a>
+    </footer>
+</blockquote>
+
+        
+
+
+        <div class="post-footer">
+            
+	<ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/kafka/" rel="tag">kafka</a></li></ul>
+
+
+            
+<div class="page-share-wrap">
+    
+
+<div class="page-share" id="pageShare">
+    <ul class="reset share-icons">
+      <li>
+        <a class="weibo share-sns" target="_blank" href="http://service.weibo.com/share/share.php?url=http://example.com/2023/04/14/kafka-%E6%B6%88%E8%B4%B9%E8%80%85%E9%AB%98-cpu-%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/&title=《kafka 消费者高 cpu 问题排查》 — Jerry Chan&pic=http://example.com/img/avatar.jpg" data-title="微博">
+          <i class="icon icon-weibo"></i>
+        </a>
+      </li>
+      <li>
+        <a class="weixin share-sns wxFab" href="javascript:;" data-title="微信">
+          <i class="icon icon-weixin"></i>
+        </a>
+      </li>
+      <li>
+        <a class="qq share-sns" target="_blank" href="http://connect.qq.com/widget/shareqq/index.html?url=http://example.com/2023/04/14/kafka-%E6%B6%88%E8%B4%B9%E8%80%85%E9%AB%98-cpu-%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/&title=《kafka 消费者高 cpu 问题排查》 — Jerry Chan&source=" data-title=" QQ">
+          <i class="icon icon-qq"></i>
+        </a>
+      </li>
+      <li>
+        <a class="facebook share-sns" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http://example.com/2023/04/14/kafka-%E6%B6%88%E8%B4%B9%E8%80%85%E9%AB%98-cpu-%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/" data-title=" Facebook">
+          <i class="icon icon-facebook"></i>
+        </a>
+      </li>
+      <li>
+        <a class="twitter share-sns" target="_blank" href="https://twitter.com/intent/tweet?text=《kafka 消费者高 cpu 问题排查》 — Jerry Chan&url=http://example.com/2023/04/14/kafka-%E6%B6%88%E8%B4%B9%E8%80%85%E9%AB%98-cpu-%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/&via=http://example.com" data-title=" Twitter">
+          <i class="icon icon-twitter"></i>
+        </a>
+      </li>
+      <li>
+        <a class="google share-sns" target="_blank" href="https://plus.google.com/share?url=http://example.com/2023/04/14/kafka-%E6%B6%88%E8%B4%B9%E8%80%85%E9%AB%98-cpu-%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/" data-title=" Google+">
+          <i class="icon icon-google-plus"></i>
+        </a>
+      </li>
+    </ul>
+ </div>
+
+
+
+    <a href="javascript:;" id="shareFab" class="page-share-fab waves-effect waves-circle">
+        <i class="icon icon-share-alt icon-lg"></i>
+    </a>
+</div>
+
+
+
+        </div>
+    </div>
+
+    
+<nav class="post-nav flex-row flex-justify-between flex-row-reverse">
+  
+
+  
+    <div class="waves-block waves-effect next">
+      <a href="/2023/04/03/wireshark-%E6%8A%93%E5%8C%85-java%E5%BA%94%E7%94%A8%E4%B8%AD%E7%9A%84-https-%E8%AF%B7%E6%B1%82/" id="post-next" class="post-nav-link">
+        <div class="tips">Next <i class="icon icon-angle-right icon-lg icon-pl"></i></div>
+        <h4 class="title">wireshark 抓包 java应用中的 https 请求</h4>
+      </a>
+    </div>
+  
+</nav>
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</article>
+
+
+
+</div>
+
+        <footer class="footer">
+    <div class="top">
+        
+<p>
+    <span id="busuanzi_container_site_uv" style='display:none'>
+        站点总访客数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span id="busuanzi_container_site_pv" style='display:none'>
+        站点总访问量：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</p>
+
+
+        <p>
+            
+                <span><a href="/atom.xml" target="_blank" class="rss" title="rss"><i class="icon icon-lg icon-rss"></i></a></span>
+            
+            <span>博客内容遵循 <a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" target="_blank">知识共享 署名 - 非商业性 - 相同方式共享 4.0 国际协议</a></span>
+        </p>
+    </div>
+    <div class="bottom">
+        <p><span>Jerry Chan &copy; 2023</span>
+            <span>
+                
+                Power by <a href="http://hexo.io/" target="_blank">Hexo</a> Theme <a href="https://github.com/yscoder/hexo-theme-indigo" target="_blank">indigo</a>
+            </span>
+        </p>
+    </div>
+</footer>
+
+    </main>
+    <div class="mask" id="mask"></div>
+<a href="javascript:;" id="gotop" class="waves-effect waves-circle waves-light"><span class="icon icon-lg icon-chevron-up"></span></a>
+
+
+
+<div class="global-share" id="globalShare">
+    <ul class="reset share-icons">
+      <li>
+        <a class="weibo share-sns" target="_blank" href="http://service.weibo.com/share/share.php?url=http://example.com/2023/04/14/kafka-%E6%B6%88%E8%B4%B9%E8%80%85%E9%AB%98-cpu-%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/&title=《kafka 消费者高 cpu 问题排查》 — Jerry Chan&pic=http://example.com/img/avatar.jpg" data-title="微博">
+          <i class="icon icon-weibo"></i>
+        </a>
+      </li>
+      <li>
+        <a class="weixin share-sns wxFab" href="javascript:;" data-title="微信">
+          <i class="icon icon-weixin"></i>
+        </a>
+      </li>
+      <li>
+        <a class="qq share-sns" target="_blank" href="http://connect.qq.com/widget/shareqq/index.html?url=http://example.com/2023/04/14/kafka-%E6%B6%88%E8%B4%B9%E8%80%85%E9%AB%98-cpu-%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/&title=《kafka 消费者高 cpu 问题排查》 — Jerry Chan&source=" data-title=" QQ">
+          <i class="icon icon-qq"></i>
+        </a>
+      </li>
+      <li>
+        <a class="facebook share-sns" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http://example.com/2023/04/14/kafka-%E6%B6%88%E8%B4%B9%E8%80%85%E9%AB%98-cpu-%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/" data-title=" Facebook">
+          <i class="icon icon-facebook"></i>
+        </a>
+      </li>
+      <li>
+        <a class="twitter share-sns" target="_blank" href="https://twitter.com/intent/tweet?text=《kafka 消费者高 cpu 问题排查》 — Jerry Chan&url=http://example.com/2023/04/14/kafka-%E6%B6%88%E8%B4%B9%E8%80%85%E9%AB%98-cpu-%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/&via=http://example.com" data-title=" Twitter">
+          <i class="icon icon-twitter"></i>
+        </a>
+      </li>
+      <li>
+        <a class="google share-sns" target="_blank" href="https://plus.google.com/share?url=http://example.com/2023/04/14/kafka-%E6%B6%88%E8%B4%B9%E8%80%85%E9%AB%98-cpu-%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/" data-title=" Google+">
+          <i class="icon icon-google-plus"></i>
+        </a>
+      </li>
+    </ul>
+ </div>
+
+
+<div class="page-modal wx-share" id="wxShare">
+    <a class="close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQ4AAAEOCAAAAABd2qZ5AAAD90lEQVR42u3aS3LbQAwFQN//0s4BHNHvAZDjqjRXKokezjQXMD4fH/H1+eV6vvPV5+RvX93z/P3Xv31+1urCgQMHDhzlUZ+XTg6WbPT5++dnJbt9fuLLU+DAgQMHjiOOJGQmD8iDYv7rFWsUvHHgwIEDx49zPAfgNrC1h0k+J7/iwIEDB47fwJEUCmfbal9DXuXDgQMHDhz/iiMvtxWFtqN2URuef6hWigMHDhw4JtEqCrq///Nb5jtw4MCBA0c5FdaGpTZl2hQN8+BdnAsHDhw4cKw52qA1O/DVgF3yGjaDdDhw4MCB44ojL+HNhhhm4w5JW6sds3g+Fw4cOHDguOKYpWqzw7TBchY4Z+fCgQMHDhxXHLNyXtvauQq6s2GF4xQOBw4cOHC8+LVt+eehtE2iNvcniVmEiwMHDhw4Tjk2hbaiBvmGwt+mEPlN/w0HDhw4cCw49gMNbRKYFPU2Rcn8xeDAgQMHjiuOduDsaqBt1qZqw3ye7EW1Uhw4cODAEXDUbf4gcWqLfZum1348os4+ceDAgQNHsE4+gna76bbJtC8CRmknDhw4cOBYcCTHS9Kn2SaSUmPL0b4kHDhw4MDxDo5Z+//q8LNnbYLrS0ocOHDgwLHm2F/7kYLbq00dj3eIAwcOHP89Rz5kkA/V5fbtwESezrVFz3rmAgcOHDhwBAMN+YFnwSxPooqOWTnE8M06OHDgwIHjfv8fs2A5W6GdvMibTG1JEQcOHDhwXHHsy3btIN3Vmm8vDuLAgQMHjkXcbEfQkrZTXuBrt5t/M+y84cCBAweOBcd+MC5ZLSkXzlhnxUQcOHDgwPE+jmRDeVOqTedmT5z9WldJceDAgQPHImfJhwM2jaJ2BGHGmr+2ou2EAwcOHDi6zKsIYG2LaMY3C5azJHM1hYEDBw4cOOK20/NR88Jc22Sahee8gBithgMHDhw4FhztuMCm8ZOXAtvw3P5bECVvOHDgwIFj0XZKglOeqrWhOn8xSQFxvxMcOHDgwLHZyVXq1VJuksAZcYSLAwcOHDiOOPKCWruVDV/eNMpfXhRoceDAgQPHmqMNosnDZuMFeWmvHb+LEHHgwIEDx5rjaqAhT9tmrO1Yw2ZlHDhw4MCx4fgsr3ysLU8ID/pmi4EJHDhw4MBxy5FfSRqWl/lmQXo/6JAHYxw4cODAseHIg+tzGGvfQDFqsEg16zYVDhw4cOA44iga/wFHfs+svbS/6rEGHDhw4MDxBo5Z6E1C4379PMn8JqriwIEDB44f5JgNE2zCbZu85Xv7Zr4DBw4cOHCsOWbFwTwNuxpoaPffjmjgwIEDB449R1tKa4+UDy7kxcHZiMNZ8REHDhw4cPz9/j+W/Wg660/RQgAAAABJRU5ErkJggg==" alt="微信分享二维码">
+</div>
+
+
+
+
+    <script src="//cdn.bootcss.com/node-waves/0.7.4/waves.min.js"></script>
+<script>
+var BLOG = { ROOT: '/', SHARE: true, REWARD: false };
+
+
+</script>
+
+<script src="//unpkg.com/hexo-theme-material-indigo@latest/js/main.min.js"></script>
+
+
+<div class="search-panel" id="search-panel">
+    <ul class="search-result" id="search-result"></ul>
+</div>
+<template id="search-tpl">
+<li class="item">
+    <a href="{path}" class="waves-block waves-effect">
+        <div class="title ellipsis" title="{title}">{title}</div>
+        <div class="flex-row flex-middle">
+            <div class="tags ellipsis">
+                {tags}
+            </div>
+            <time class="flex-col time">{date}</time>
+        </div>
+    </a>
+</li>
+</template>
+
+<script src="//unpkg.com/hexo-theme-material-indigo@latest/js/search.min.js" async></script>
+
+
+
+
+
+
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+<script>
+(function() {
+    var OriginTitile = document.title, titleTime;
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            document.title = '大爷别走呀！';
+            clearTimeout(titleTime);
+        } else {
+            document.title = '来啦，老弟!';
+            titleTime = setTimeout(function() {
+                document.title = OriginTitile;
+            },2000);
+        }
+    });
+})();
+</script>
+
+
+
+</body>
+</html>
