@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+
+    
+
+    
+
+
+
+    <meta charset="utf-8">
+    
+    
+    
+    
+    <title>聊聊双亲委派机制 | Jerry Chan</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    
+    <meta name="theme-color" content="#3F51B5">
+    
+    
+    <meta name="keywords" content="jvm">
+    <meta name="description" content="最近重新看了双亲委派相关的知识，特此记录一下，方便以后重新回顾  Java 类是怎么加载Java 通过 ClassLoader 实例的 loadClass 方法将字节码（.class）文件加载到 JVM 的方法区中。啥也不说，先上代码 (～￣▽￣)～： 123456789101112131415161718192021222324252627282930313233343536373839404">
+<meta property="og:type" content="article">
+<meta property="og:title" content="聊聊双亲委派机制">
+<meta property="og:url" content="http://example.com/2023/04/30/%E8%81%8A%E8%81%8A%E5%8F%8C%E4%BA%B2%E5%A7%94%E6%B4%BE%E6%9C%BA%E5%88%B6/index.html">
+<meta property="og:site_name" content="Jerry Chan">
+<meta property="og:description" content="最近重新看了双亲委派相关的知识，特此记录一下，方便以后重新回顾  Java 类是怎么加载Java 通过 ClassLoader 实例的 loadClass 方法将字节码（.class）文件加载到 JVM 的方法区中。啥也不说，先上代码 (～￣▽￣)～： 123456789101112131415161718192021222324252627282930313233343536373839404">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-04-29T17:17:16.000Z">
+<meta property="article:modified_time" content="2023-04-29T17:17:16.235Z">
+<meta property="article:author" content="Jerry Chan">
+<meta property="article:tag" content="jvm">
+<meta name="twitter:card" content="summary">
+    
+        <link rel="alternate" type="application/atom+xml" title="Jerry Chan" href="/atom.xml">
+    
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="stylesheet" href="//unpkg.com/hexo-theme-material-indigo@latest/css/style.css">
+    <script>window.lazyScripts=[]</script>
+
+    <!-- custom head -->
+    
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body>
+    <div id="loading" class="active"></div>
+
+    <aside id="menu" class="hide" >
+  <div class="inner flex-row-vertical">
+    <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="menu-off">
+        <i class="icon icon-lg icon-close"></i>
+    </a>
+    <div class="brand-wrap" style="background-image:url(/img/brand.jpg)">
+      <div class="brand">
+        <a href="/" class="avatar waves-effect waves-circle waves-light">
+          <img src="/img/avatar.jpg">
+        </a>
+        <hgroup class="introduce">
+          <h5 class="nickname">Jerry Chan</h5>
+          <a href="mailto:jerrtqtqcjl@gmail.com" title="jerrtqtqcjl@gmail.com" class="mail">jerrtqtqcjl@gmail.com</a>
+        </hgroup>
+      </div>
+    </div>
+    <div class="scroll-wrap flex-col">
+      <ul class="nav">
+        
+            <li class="waves-block waves-effect">
+              <a href="/"  >
+                <i class="icon icon-lg icon-home"></i>
+                主页
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/archives"  >
+                <i class="icon icon-lg icon-archives"></i>
+                归档
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/tags"  >
+                <i class="icon icon-lg icon-tags"></i>
+                标签
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/categories"  >
+                <i class="icon icon-lg icon-th-list"></i>
+                目录
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="https://github.com/JerryQTQcjl" target="_blank" >
+                <i class="icon icon-lg icon-github"></i>
+                Github
+              </a>
+            </li>
+        
+      </ul>
+    </div>
+  </div>
+</aside>
+
+    <main id="main">
+        <header class="top-header" id="header">
+    <div class="flex-row">
+        <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light on" id="menu-toggle">
+          <i class="icon icon-lg icon-navicon"></i>
+        </a>
+        <div class="flex-col header-title ellipsis">聊聊双亲委派机制</div>
+        
+        <div class="search-wrap" id="search-wrap">
+            <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="back">
+                <i class="icon icon-lg icon-chevron-left"></i>
+            </a>
+            <input type="text" id="key" class="search-input" autocomplete="off" placeholder="输入感兴趣的关键字">
+            <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="search">
+                <i class="icon icon-lg icon-search"></i>
+            </a>
+        </div>
+        
+        
+        <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="menuShare">
+            <i class="icon icon-lg icon-share-alt"></i>
+        </a>
+        
+    </div>
+</header>
+<header class="content-header post-header">
+
+    <div class="container fade-scale">
+        <h1 class="title">聊聊双亲委派机制</h1>
+        <h5 class="subtitle">
+            
+                <time datetime="2023-04-29T17:17:16.000Z" itemprop="datePublished" class="page-time">
+  2023-04-30
+</time>
+
+
+            
+        </h5>
+    </div>
+
+    
+
+
+</header>
+
+
+<div class="container body-wrap">
+    
+    <aside class="post-widget">
+        <nav class="post-toc-wrap post-toc-shrink" id="post-toc">
+            <h4>TOC</h4>
+            <ol class="post-toc"><li class="post-toc-item post-toc-level-4"><a class="post-toc-link" href="#Java-类是怎么加载"><span class="post-toc-number">1.</span> <span class="post-toc-text">Java 类是怎么加载</span></a></li><li class="post-toc-item post-toc-level-4"><a class="post-toc-link" href="#Java-默认的类加载器"><span class="post-toc-number">2.</span> <span class="post-toc-text">Java 默认的类加载器</span></a></li><li class="post-toc-item post-toc-level-4"><a class="post-toc-link" href="#Java-类的加载时机有哪些"><span class="post-toc-number">3.</span> <span class="post-toc-text">Java 类的加载时机有哪些</span></a></li><li class="post-toc-item post-toc-level-4"><a class="post-toc-link" href="#什么是双亲委派机制"><span class="post-toc-number">4.</span> <span class="post-toc-text">什么是双亲委派机制</span></a></li><li class="post-toc-item post-toc-level-4"><a class="post-toc-link" href="#JDBC-真的打破双亲委派了吗"><span class="post-toc-number">5.</span> <span class="post-toc-text">JDBC 真的打破双亲委派了吗</span></a></li><li class="post-toc-item post-toc-level-4"><a class="post-toc-link" href="#Tomcat-如何打破双亲委派"><span class="post-toc-number">6.</span> <span class="post-toc-text">Tomcat 如何打破双亲委派</span></a></li><li class="post-toc-item post-toc-level-4"><a class="post-toc-link" href="#自定义类加载器"><span class="post-toc-number">7.</span> <span class="post-toc-text">自定义类加载器</span></a></li><li class="post-toc-item post-toc-level-4"><a class="post-toc-link" href="#总结"><span class="post-toc-number">8.</span> <span class="post-toc-text">总结</span></a></li></ol>
+        </nav>
+    </aside>
+
+
+<article id="post-聊聊双亲委派机制"
+  class="post-article article-type-post fade" itemprop="blogPost">
+
+    <div class="post-card">
+        <h1 class="post-card-title">聊聊双亲委派机制</h1>
+        <div class="post-meta">
+            <time class="post-time" title="2023-04-30 01:17:16" datetime="2023-04-29T17:17:16.000Z"  itemprop="datePublished">2023-04-30</time>
+
+            
+
+
+            
+<span id="busuanzi_container_page_pv" title="文章总阅读量" style='display:none'>
+    <i class="icon icon-eye icon-pr"></i><span id="busuanzi_value_page_pv"></span>
+</span>
+
+
+        </div>
+        <div class="post-content" id="post-content" itemprop="postContent">
+            <blockquote>
+<p>最近重新看了双亲委派相关的知识，特此记录一下，方便以后重新回顾</p>
+</blockquote>
+<h4 id="Java-类是怎么加载"><a href="#Java-类是怎么加载" class="headerlink" title="Java 类是怎么加载"></a>Java 类是怎么加载</h4><p>Java 通过 ClassLoader 实例的 loadClass 方法将字节码（.class）文件加载到 JVM 的方法区中。啥也不说，先上代码 (～￣▽￣)～：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line"> <span class="keyword">protected</span> Class&lt;?&gt; loadClass(String name, <span class="keyword">boolean</span> resolve)</span><br><span class="line">        <span class="keyword">throws</span> ClassNotFoundException</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">synchronized</span> (getClassLoadingLock(name)) &#123;</span><br><span class="line">            <span class="comment">// 从已加载的类中寻找</span></span><br><span class="line">            Class&lt;?&gt; c = findLoadedClass(name);</span><br><span class="line">            <span class="keyword">if</span> (c == <span class="keyword">null</span>) &#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    <span class="comment">//父委派机制</span></span><br><span class="line">                    <span class="keyword">if</span> (parent != <span class="keyword">null</span>) &#123;</span><br><span class="line">                        c = parent.loadClass(name, <span class="keyword">false</span>);</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                        <span class="comment">//没有父类加载器，则说明父加载器是启动类加载器</span></span><br><span class="line">                        c = findBootstrapClassOrNull(name);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="keyword">catch</span> (ClassNotFoundException e) &#123;</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                <span class="keyword">if</span> (c == <span class="keyword">null</span>) &#123;</span><br><span class="line">                    <span class="comment">//根据类名从数据源查找对应的字节码，读取二进制流，生成 Class 对象</span></span><br><span class="line">                    c = findClass(name);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (resolve) &#123;</span><br><span class="line">                <span class="comment">//官方注释说是链接一个类，这里暂时没用过，下次看看</span></span><br><span class="line">                resolveClass(c);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span> c;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//此处贴的是 ClassLoader 子类 URLClassLoader 的 findClass 方法，也是默认的实现</span></span><br><span class="line"><span class="keyword">protected</span> Class&lt;?&gt; findClass(<span class="keyword">final</span> String name)</span><br><span class="line">        <span class="keyword">throws</span> ClassNotFoundException</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">final</span> Class&lt;?&gt; result;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            result = AccessController.doPrivileged(</span><br><span class="line">                <span class="keyword">new</span> PrivilegedExceptionAction&lt;Class&lt;?&gt;&gt;() &#123;</span><br><span class="line">                    <span class="keyword">public</span> Class&lt;?&gt; run() <span class="keyword">throws</span> ClassNotFoundException &#123;</span><br><span class="line">                        <span class="comment">//根据类名从资源路径查找对应的资源</span></span><br><span class="line">                        String path = name.replace(<span class="string">'.'</span>, <span class="string">'/'</span>).concat(<span class="string">".class"</span>);</span><br><span class="line">                        Resource res = ucp.getResource(path, <span class="keyword">false</span>);</span><br><span class="line">                        <span class="keyword">if</span> (res != <span class="keyword">null</span>) &#123;</span><br><span class="line">                            <span class="keyword">try</span> &#123;</span><br><span class="line">                                <span class="comment">//读取二进制流，生成 Class 对象</span></span><br><span class="line">                                <span class="keyword">return</span> defineClass(name, res);</span><br><span class="line">                            &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">                                <span class="keyword">throw</span> <span class="keyword">new</span> ClassNotFoundException(name, e);</span><br><span class="line">                            &#125;</span><br><span class="line">                        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                            <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;, acc);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (java.security.PrivilegedActionException pae) &#123;</span><br><span class="line">            <span class="keyword">throw</span> (ClassNotFoundException) pae.getException();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (result == <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> ClassNotFoundException(name);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>从上面的代码可以看到 loadClass 主要做了两件事情：</p>
+<ol>
+<li>** 根据类名从资源路径（文件、网络等）查找对应的字节码资源**</li>
+<li><strong>从资源路径读取字节码二进制流，并生成对应的 Class 对象，其中包括权限校验，字节码校验等。</strong></li>
+</ol>
+<h4 id="Java-默认的类加载器"><a href="#Java-默认的类加载器" class="headerlink" title="Java 默认的类加载器"></a>Java 默认的类加载器</h4><p>JDK9 之前默认的类加载器有：<strong>AppClassLoader、ExtClassLoader、BootstrapClassloader</strong></p>
+<ul>
+<li>BootstrapClassLoader: JRE 的 lib 目录下 jar 包中的类（以及由虚拟机参数 -Xbootclasspath 指定的类），注意，他不是定义在 Java 代码中的。</li>
+<li>ExtClassLoader：存放在 JRE 的 lib/ext 目录下 jar 包中的类（以及由系统变量 java.ext.dirs 指定的类）。</li>
+<li>AppClassLoader：负责加载应用程序路径下的类（虚拟机参数 -cp/-classpath、系统变量 java.class.path 或环境变量 CLASSPATH 所指定的路径）</li>
+</ul>
+<p>JDK9 及以后默认的类加载器：<strong>AppClassLoader、PlatformClassLoader、BootstrapClassLoader</strong></p>
+<ul>
+<li>PlatformClassLoader：其实就是之前的 ExtClassLoader，只是将大部分原本由 BootstrapClassLoader 加载的类交由 PlatformClassLoader 加载</li>
+</ul>
+<h4 id="Java-类的加载时机有哪些"><a href="#Java-类的加载时机有哪些" class="headerlink" title="Java 类的加载时机有哪些"></a>Java 类的加载时机有哪些</h4><p>类加载的时机有很多，这里主要列举一些易错场景 (～￣▽￣)～：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ClassLoadTimingTest</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> ClassNotFoundException </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//new一个对象实例</span></span><br><span class="line">        <span class="keyword">new</span> A(); <span class="comment">//加载A</span></span><br><span class="line">        <span class="comment">//通过反射实例化一个对象</span></span><br><span class="line">        Class.forName(<span class="string">"com.classloader.demo.char01.A"</span>); <span class="comment">//加载A</span></span><br><span class="line">        <span class="comment">//访问类的静态变量</span></span><br><span class="line">        System.out.println(A.word);   <span class="comment">//加载A</span></span><br><span class="line">        <span class="comment">//访问类的静态方法</span></span><br><span class="line">        A.println(); <span class="comment">//加载A</span></span><br><span class="line">        <span class="comment">//子类初始化会触发父类初始化</span></span><br><span class="line">        System.out.println(B.word1); <span class="comment">//加载A、B</span></span><br><span class="line">        </span><br><span class="line">        <span class="comment">//以下情况不加载</span></span><br><span class="line">        System.out.println(B.word); <span class="comment">//加载A，不加载B</span></span><br><span class="line">        <span class="comment">//创建数组不加载类</span></span><br><span class="line">        System.out.println(<span class="keyword">new</span> A[]&#123;&#125;); <span class="comment">//不加载A</span></span><br><span class="line">        <span class="comment">//访问常量不加载类</span></span><br><span class="line">        System.out.println(A.DEFAULT); <span class="comment">//不加载A</span></span><br><span class="line">        </span><br><span class="line">        <span class="comment">//易混淆情况，编译器无法确定最终变量的值，所以运行期要去加载</span></span><br><span class="line">        System.out.println(A.DEFAULT1); <span class="comment">//加载A</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">A</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">final</span> <span class="keyword">static</span> String DEFAULT = <span class="string">"HELLO WORLD"</span>;</span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">final</span> <span class="keyword">static</span> String DEFAULT1 = <span class="keyword">new</span> String(<span class="string">"123"</span>);</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> String word = <span class="string">"HELLO WORLD"</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">"A was loader"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">println</span><span class="params">()</span></span>&#123;&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">B</span> <span class="keyword">extends</span> <span class="title">A</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> String word1 = <span class="string">"HELLO WORLD"</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">"B was loader"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="什么是双亲委派机制"><a href="#什么是双亲委派机制" class="headerlink" title="什么是双亲委派机制"></a>什么是双亲委派机制</h4><p>仔细的同学应该会发现，上面加载类的方法中，优先会调用 <strong>parent.loadClass</strong> 去加载类，如果没加载到才会走继续往下走。</p>
+<p><strong>其实这就是类加载的父委派机制，优先由父加载器去加载类，父类加载器没加载到才有自身尝试去加载。</strong></p>
+<p>那么什么是双亲委派机制呢，还记得上面提到 JDK8 的默认类加载器有 AppClassLoader、ExtClassLoader、BootstrapClassloader，BootstrapClassloader 是 ExtClassLoader 的父加载器，ExtClassLoader 是 AppClassLoader 的父加载器。嗯，就是因为 AppClassLoader 有一个爸爸和一个爷爷，所以称为双亲委派机制。就是这么简单 ︿(￣︶￣)︿。</p>
+<p><strong>那么双亲委派机制的作用是什么呢，我认为有两点：</strong></p>
+<ol>
+<li><strong>防止同一个类被加载到 JVM 多次</strong></li>
+<li><strong>避免 Java 内部的一些基础类没有被正确加载，导致出现难以意料的异常</strong></li>
+</ol>
+<h4 id="JDBC-真的打破双亲委派了吗"><a href="#JDBC-真的打破双亲委派了吗" class="headerlink" title="JDBC 真的打破双亲委派了吗"></a>JDBC 真的打破双亲委派了吗</h4><p>在说 JDBC 是否打破双亲委派之前我们先来聊聊什么是打破双亲委派机制，嗯，就是让类的加载顺序不在是 <strong>BootstrapClassloader -&gt; ExtClassLoader -&gt; AppClassLoader</strong>，就是字面上的意思不再让爷爷和爸爸先加载，而是儿子自己想先加载就先加载 ︿(￣︶￣)︿。那么我们该怎么做呢，是不是<strong>自定义一个类加载器，重写下 loadClass 方法不在调用 parent.loadClass 就可以了</strong>？嗯，是的 o(￣▽￣)ｄ。</p>
+<p>那么我们再来看看 JDBC 真的打破双亲委派了吗。老规矩，线上代码 (～￣▽￣)～：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br></pre></td><td class="code"><pre><span class="line">AppClassLoaderpublic <span class="class"><span class="keyword">class</span> <span class="title">DriverManager</span> </span>&#123;</span><br><span class="line">    <span class="keyword">static</span> &#123;</span><br><span class="line">        loadInitialDrivers();</span><br><span class="line">        println(<span class="string">"JDBC DriverManager initialized"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">loadInitialDrivers</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        String drivers;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">//获取环境变量中配置的驱动</span></span><br><span class="line">            drivers = AccessController.doPrivileged(<span class="keyword">new</span> PrivilegedAction&lt;String&gt;() &#123;</span><br><span class="line">                <span class="function"><span class="keyword">public</span> String <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                    <span class="keyword">return</span> System.getProperty(<span class="string">"jdbc.drivers"</span>);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception ex) &#123;</span><br><span class="line">            drivers = <span class="keyword">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        AccessController.doPrivileged(<span class="keyword">new</span> PrivilegedAction&lt;Void&gt;() &#123;</span><br><span class="line">            <span class="function"><span class="keyword">public</span> Void <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                <span class="comment">//通过SPI机制加载驱动类</span></span><br><span class="line">                ServiceLoader&lt;Driver&gt; loadedDrivers = ServiceLoader.load(Driver<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">                Iterator&lt;Driver&gt; driversIterator = loadedDrivers.iterator();</span><br><span class="line"></span><br><span class="line">                 */</span><br><span class="line">                <span class="keyword">try</span>&#123;</span><br><span class="line">                    <span class="keyword">while</span>(driversIterator.hasNext()) &#123;</span><br><span class="line">                        <span class="comment">//这里面会加载驱动类（不初始化），但是会通过反射实例化驱动类（会初始化）</span></span><br><span class="line">                        driversIterator.next();</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="keyword">catch</span>(Throwable t) &#123;</span><br><span class="line">                <span class="comment">// Do nothing</span></span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line"></span><br><span class="line">        println(<span class="string">"DriverManager.initialize: jdbc.drivers = "</span> + drivers);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (drivers == <span class="keyword">null</span> || drivers.equals(<span class="string">""</span>)) &#123;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        String[] driversList = drivers.split(<span class="string">":"</span>);</span><br><span class="line">        println(<span class="string">"number of Drivers:"</span> + driversList.length);</span><br><span class="line">        <span class="keyword">for</span> (String aDriver : driversList) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                println(<span class="string">"DriverManager.Initialize: loading "</span> + aDriver);</span><br><span class="line">                <span class="comment">//加载驱动类并初始化</span></span><br><span class="line">                Class.forName(aDriver, <span class="keyword">true</span>,</span><br><span class="line">                        ClassLoader.getSystemClassLoader());</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Exception ex) &#123;</span><br><span class="line">                println(<span class="string">"DriverManager.Initialize: load failed: "</span> + ex);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">ServiceLoader</span>&lt;<span class="title">S</span>&gt; </span>&#123;</span><br><span class="line">  </span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> ClassLoader loader;</span><br><span class="line">  </span><br><span class="line">  <span class="keyword">private</span> LazyIterator lookupIterator;</span><br><span class="line">  </span><br><span class="line">  <span class="keyword">public</span> <span class="keyword">static</span> &lt;S&gt; <span class="function">ServiceLoader&lt;S&gt; <span class="title">load</span><span class="params">(Class&lt;S&gt; service)</span> </span>&#123;</span><br><span class="line">      <span class="comment">//拿到线程上下文中的类加载器，这里如果未设置过获取到的是 AppClassLoader</span></span><br><span class="line">      ClassLoader cl = Thread.currentThread().getContextClassLoader();</span><br><span class="line">      <span class="keyword">return</span> ServiceLoader.load(service, cl);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>从上面的代码可以看到，DriverManager 通过 SPI 机制，加载 Driver 驱动类，而 ServiceLoader 中其实只是拿到当前上下文中的类加载器，那么能说他打破了双亲委派机制吗？我个人觉得是不能的，先不说其他，<strong>在未手动设置线程上下文中的类加载器的情况下，线程上下文类加载器是继承至父线程的，其实也就是 AppClassLoader，那正常情况下他走的就是双亲委派机制 （￣︶￣）↗。就算是将自定义的类加载器放入线程上下文中，那也是由自定义的类加载器通过重写 loadClass 打破双亲委派机制呀，所以我认为 JDBC 自身并未打破了双亲委派机制 &lt;(￣︶￣)&gt;。</strong></p>
+<h4 id="Tomcat-如何打破双亲委派"><a href="#Tomcat-如何打破双亲委派" class="headerlink" title="Tomcat 如何打破双亲委派"></a>Tomcat 如何打破双亲委派</h4><p>那么 Tomcat 打破了吗？嗯，它打破了 ｂ（￣▽￣）ｄ，Tomcat7 及以上自定义了类加载器 ParallelWebappClassLoader 和 WebappClassLoader。嗯，这里注意一下，Tomcat6 以下的类加载器有所不同，不过原理都是一样的（其实是我偷懒，不想把 Tomcat6 源码也看了 (╯▽╰)）。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> Class&lt;?&gt; loadClass(String name, <span class="keyword">boolean</span> resolve) <span class="keyword">throws</span> ClassNotFoundException &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">synchronized</span> (JreCompat.isGraalAvailable() ? <span class="keyword">this</span> : getClassLoadingLock(name)) &#123;</span><br><span class="line">            </span><br><span class="line">        String resourceName = binaryNameToPath(name, <span class="keyword">false</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//这里获取到 ExtClassLoader</span></span><br><span class="line">        ClassLoader javaseLoader = getJavaseClassLoader();</span><br><span class="line">        <span class="keyword">boolean</span> tryLoadingFromJavaseLoader;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            URL url;</span><br><span class="line">            <span class="keyword">if</span> (securityManager != <span class="keyword">null</span>) &#123;</span><br><span class="line">                PrivilegedAction&lt;URL&gt; dp = <span class="keyword">new</span> PrivilegedJavaseGetResource(resourceName);</span><br><span class="line">                url = AccessController.doPrivileged(dp);</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="comment">//先ExtClassLoader和BoostrapClassLoader的资源路径中查找字节码资源</span></span><br><span class="line">                url = javaseLoader.getResource(resourceName);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//如果资源存在则走ExtClassLoader和BoostrapClassLoader加载</span></span><br><span class="line">            tryLoadingFromJavaseLoader = (url != <span class="keyword">null</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">            ExceptionUtils.handleThrowable(t);</span><br><span class="line">            tryLoadingFromJavaseLoader = <span class="keyword">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (tryLoadingFromJavaseLoader) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="comment">//如果资源存在则走ExtClassLoader和BoostrapClassLoader加载</span></span><br><span class="line">                clazz = javaseLoader.loadClass(name);</span><br><span class="line">                <span class="comment">//return</span></span><br><span class="line">            &#125; <span class="keyword">catch</span> (ClassNotFoundException e) &#123;</span><br><span class="line">                <span class="comment">// Ignore</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//判断是否需要委派给父类加载器，默认是AppClassLoader，或者是Tomcat内部的一些类</span></span><br><span class="line">        <span class="keyword">boolean</span> delegateLoad = delegate || filter(name, <span class="keyword">true</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// (1) Delegate to our parent if requested</span></span><br><span class="line">        <span class="keyword">if</span> (delegateLoad) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                </span><br><span class="line">                clazz = Class.forName(name, <span class="keyword">false</span>, parent);</span><br><span class="line">                <span class="comment">//return</span></span><br><span class="line">            &#125; <span class="keyword">catch</span> (ClassNotFoundException e) &#123;</span><br><span class="line">                <span class="comment">// Ignore</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">//从本地目录中查找类并加载</span></span><br><span class="line">            clazz = findClass(name);</span><br><span class="line">            <span class="comment">//return</span></span><br><span class="line">        &#125; <span class="keyword">catch</span> (ClassNotFoundException e) &#123;</span><br><span class="line">            <span class="comment">// Ignore</span></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// (3) Delegate to parent unconditionally</span></span><br><span class="line">        <span class="keyword">if</span> (!delegateLoad) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="comment">//还是没有找到就委派给父加载器，默认是AppClassLoader</span></span><br><span class="line">                clazz = Class.forName(name, <span class="keyword">false</span>, parent);</span><br><span class="line">                <span class="comment">//return</span></span><br><span class="line">            &#125; <span class="keyword">catch</span> (ClassNotFoundException e) &#123;</span><br><span class="line">                <span class="comment">// Ignore</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> ClassNotFoundException(name);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>我们看看 Tomcat 都改了啥：</p>
+<ol>
+<li>首先尝试通过 ExtClassLoader 加载类，防止 java 相关的一些类被先加载了</li>
+<li>判断是否需要委派给父类加载器，或者是是否是Tomcat内部的一些类，是的话则委派给父类加载器</li>
+<li><strong>从本地目录和扩展路径中查找类并加载，还记的早起我们使用 Tomcat 时，会将多个 war 包放在 webapps 吗，那么如果多个 war 中完全的全路径类名，走默认的双亲委派机制就只有先加载的能加载成功。此处便是 Tomcat 打破双亲委派意义了。</strong></li>
+<li>如果还是没有找到，就委派给父类加载器，走双亲委派机制。</li>
+</ol>
+<p>可以看到，Tomcat 的类加载顺序不再是 <strong>BootstrapClassloader -&gt; ExtClassLoader -&gt; AppClassLoader</strong>，而是在 <strong>AppClassLoader 前先尝试通过 WebappClassLoader 加载本地目录</strong> ｂ（￣▽￣）ｄ。</p>
+<h4 id="自定义类加载器"><a href="#自定义类加载器" class="headerlink" title="自定义类加载器"></a>自定义类加载器</h4><p>篇幅有点长了，这个下次一定 ╰(￣▽￣)╭</p>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><ol>
+<li>Java 通过 ClassLoader 实例的 loadClass 方法将字节码（.class）文件加载到 JVM 的方法区中。</li>
+<li>JDK9 之前默认的类加载器有：<strong>AppClassLoader、ExtClassLoader、BootstrapClassloader</strong> ,JDK9 及以后默认的类加载器：**AppClassLoader、PlatformClassLoader、BootstrapClassLoader **。</li>
+<li>类加载时机包括：new一个对象实例；反射实例化一个对象；访问类的静态变量、方法；子类初始化会触发父类初始化；方法句柄调用加载方法所在类。</li>
+<li>不加载时机：<strong>访问父类静态变量，不加载子类；创建数组不加载类；访问常量不加载类，但是如果编译是无法确定，运行期还是会加载类。</strong></li>
+<li><strong>JVM 为防止同一个类被加载多次</strong>，引入双亲委派机制，加载类过程中，先由其父类加载器加载，未加载到在自己加载</li>
+<li>JDBC 并未打破双亲委派，而 Tomcat 通过自定义 ClassLoader 打破双亲委派。</li>
+</ol>
+
+        </div>
+
+        <blockquote class="post-copyright">
+    
+    <div class="content">
+        
+<span class="post-time">
+    最后更新时间：<time datetime="2023-04-29T17:17:16.235Z" itemprop="dateUpdated">2023-04-30 01:17:16</time>
+</span><br>
+
+
+        
+    </div>
+    
+    <footer>
+        <a href="http://example.com">
+            <img src="/img/avatar.jpg" alt="Jerry Chan">
+            Jerry Chan
+        </a>
+    </footer>
+</blockquote>
+
+        
+
+
+        <div class="post-footer">
+            
+	<ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/jvm/" rel="tag">jvm</a></li></ul>
+
+
+            
+<div class="page-share-wrap">
+    
+
+<div class="page-share" id="pageShare">
+    <ul class="reset share-icons">
+      <li>
+        <a class="weibo share-sns" target="_blank" href="http://service.weibo.com/share/share.php?url=http://example.com/2023/04/30/%E8%81%8A%E8%81%8A%E5%8F%8C%E4%BA%B2%E5%A7%94%E6%B4%BE%E6%9C%BA%E5%88%B6/&title=《聊聊双亲委派机制》 — Jerry Chan&pic=http://example.com/img/avatar.jpg" data-title="微博">
+          <i class="icon icon-weibo"></i>
+        </a>
+      </li>
+      <li>
+        <a class="weixin share-sns wxFab" href="javascript:;" data-title="微信">
+          <i class="icon icon-weixin"></i>
+        </a>
+      </li>
+      <li>
+        <a class="qq share-sns" target="_blank" href="http://connect.qq.com/widget/shareqq/index.html?url=http://example.com/2023/04/30/%E8%81%8A%E8%81%8A%E5%8F%8C%E4%BA%B2%E5%A7%94%E6%B4%BE%E6%9C%BA%E5%88%B6/&title=《聊聊双亲委派机制》 — Jerry Chan&source=" data-title=" QQ">
+          <i class="icon icon-qq"></i>
+        </a>
+      </li>
+      <li>
+        <a class="facebook share-sns" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http://example.com/2023/04/30/%E8%81%8A%E8%81%8A%E5%8F%8C%E4%BA%B2%E5%A7%94%E6%B4%BE%E6%9C%BA%E5%88%B6/" data-title=" Facebook">
+          <i class="icon icon-facebook"></i>
+        </a>
+      </li>
+      <li>
+        <a class="twitter share-sns" target="_blank" href="https://twitter.com/intent/tweet?text=《聊聊双亲委派机制》 — Jerry Chan&url=http://example.com/2023/04/30/%E8%81%8A%E8%81%8A%E5%8F%8C%E4%BA%B2%E5%A7%94%E6%B4%BE%E6%9C%BA%E5%88%B6/&via=http://example.com" data-title=" Twitter">
+          <i class="icon icon-twitter"></i>
+        </a>
+      </li>
+      <li>
+        <a class="google share-sns" target="_blank" href="https://plus.google.com/share?url=http://example.com/2023/04/30/%E8%81%8A%E8%81%8A%E5%8F%8C%E4%BA%B2%E5%A7%94%E6%B4%BE%E6%9C%BA%E5%88%B6/" data-title=" Google+">
+          <i class="icon icon-google-plus"></i>
+        </a>
+      </li>
+    </ul>
+ </div>
+
+
+
+    <a href="javascript:;" id="shareFab" class="page-share-fab waves-effect waves-circle">
+        <i class="icon icon-share-alt icon-lg"></i>
+    </a>
+</div>
+
+
+
+        </div>
+    </div>
+
+    
+<nav class="post-nav flex-row flex-justify-between flex-row-reverse">
+  
+
+  
+    <div class="waves-block waves-effect next">
+      <a href="/2023/04/22/Spring-Validated-%E5%A4%B1%E6%95%88%E5%88%86%E6%9E%90/" id="post-next" class="post-nav-link">
+        <div class="tips">Next <i class="icon icon-angle-right icon-lg icon-pl"></i></div>
+        <h4 class="title">Spring @Validated 失效分析</h4>
+      </a>
+    </div>
+  
+</nav>
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</article>
+
+
+
+</div>
+
+        <footer class="footer">
+    <div class="top">
+        
+<p>
+    <span id="busuanzi_container_site_uv" style='display:none'>
+        站点总访客数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span id="busuanzi_container_site_pv" style='display:none'>
+        站点总访问量：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</p>
+
+
+        <p>
+            
+                <span><a href="/atom.xml" target="_blank" class="rss" title="rss"><i class="icon icon-lg icon-rss"></i></a></span>
+            
+            <span>博客内容遵循 <a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" target="_blank">知识共享 署名 - 非商业性 - 相同方式共享 4.0 国际协议</a></span>
+        </p>
+    </div>
+    <div class="bottom">
+        <p><span>Jerry Chan &copy; 2023</span>
+            <span>
+                
+                Power by <a href="http://hexo.io/" target="_blank">Hexo</a> Theme <a href="https://github.com/yscoder/hexo-theme-indigo" target="_blank">indigo</a>
+            </span>
+        </p>
+    </div>
+</footer>
+
+    </main>
+    <div class="mask" id="mask"></div>
+<a href="javascript:;" id="gotop" class="waves-effect waves-circle waves-light"><span class="icon icon-lg icon-chevron-up"></span></a>
+
+
+
+<div class="global-share" id="globalShare">
+    <ul class="reset share-icons">
+      <li>
+        <a class="weibo share-sns" target="_blank" href="http://service.weibo.com/share/share.php?url=http://example.com/2023/04/30/%E8%81%8A%E8%81%8A%E5%8F%8C%E4%BA%B2%E5%A7%94%E6%B4%BE%E6%9C%BA%E5%88%B6/&title=《聊聊双亲委派机制》 — Jerry Chan&pic=http://example.com/img/avatar.jpg" data-title="微博">
+          <i class="icon icon-weibo"></i>
+        </a>
+      </li>
+      <li>
+        <a class="weixin share-sns wxFab" href="javascript:;" data-title="微信">
+          <i class="icon icon-weixin"></i>
+        </a>
+      </li>
+      <li>
+        <a class="qq share-sns" target="_blank" href="http://connect.qq.com/widget/shareqq/index.html?url=http://example.com/2023/04/30/%E8%81%8A%E8%81%8A%E5%8F%8C%E4%BA%B2%E5%A7%94%E6%B4%BE%E6%9C%BA%E5%88%B6/&title=《聊聊双亲委派机制》 — Jerry Chan&source=" data-title=" QQ">
+          <i class="icon icon-qq"></i>
+        </a>
+      </li>
+      <li>
+        <a class="facebook share-sns" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http://example.com/2023/04/30/%E8%81%8A%E8%81%8A%E5%8F%8C%E4%BA%B2%E5%A7%94%E6%B4%BE%E6%9C%BA%E5%88%B6/" data-title=" Facebook">
+          <i class="icon icon-facebook"></i>
+        </a>
+      </li>
+      <li>
+        <a class="twitter share-sns" target="_blank" href="https://twitter.com/intent/tweet?text=《聊聊双亲委派机制》 — Jerry Chan&url=http://example.com/2023/04/30/%E8%81%8A%E8%81%8A%E5%8F%8C%E4%BA%B2%E5%A7%94%E6%B4%BE%E6%9C%BA%E5%88%B6/&via=http://example.com" data-title=" Twitter">
+          <i class="icon icon-twitter"></i>
+        </a>
+      </li>
+      <li>
+        <a class="google share-sns" target="_blank" href="https://plus.google.com/share?url=http://example.com/2023/04/30/%E8%81%8A%E8%81%8A%E5%8F%8C%E4%BA%B2%E5%A7%94%E6%B4%BE%E6%9C%BA%E5%88%B6/" data-title=" Google+">
+          <i class="icon icon-google-plus"></i>
+        </a>
+      </li>
+    </ul>
+ </div>
+
+
+<div class="page-modal wx-share" id="wxShare">
+    <a class="close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPYAAAD2CAAAAADAeSUUAAADIklEQVR42u3aQW7jQAwEwPz/09lrgGDlblIG5EnpFMRjaWp8IMjW11d8ff+4kjXX18/1v//On57sanVhY2Njfwi73eLv717/539b3BzN9frre2JjY2Ofyr4m5WuSUjS7wzWy/XmwsbGx/zI7h+Xl5K7ihI2NjY2dl5brEU87fpqNirCxsbGx28KQ49uA4dGzNGxsbOzHs/NU9Pl/vyXfxsbGxn4w+7u8ku/eVZzaAlYosLGxsQ9i71+d2TQkbWCQhxPRaAkbGxv7OHYycJ+N49sYoF3ZHjE2Njb2SexZoUrG9G0A3Ea/s2PFxsbGPo/dPjIfLeWxcTt4ysvei29hY2NjH8HOR0XtRjftyqagFr8zNjY29hHsnLQBz1qXdqjUfoqNjY19Hnu2rXagk99ztiZ/hRQbGxv7JHaydDP0yUdReYF8kV3HPw82Njb2SeycN4tmk+/uI+d6/ISNjY394ey8AWgHT0kLsRkqteBh34ONjY39Uex2EJ88YHMQ+f3z48PGxsY+j5183Aa3edMyayTuCiSwsbGxz2C37cRsEL8JhmfF7MV6bGxs7IPYbYnahMH5EbeNTRtIYGNjY5/ETgLdu17Nye+TN0XDUBkbGxv7IHbymM3D8u3mBa9oNpKQABsbG/sgdjsqSo5mX9jyZmPYxmBjY2N/OHvWKrTFY9PwtBW4CAawsbGxj2C3G33HCzdJs5F/OjtubGxs7E9n5wUsud1mDNS2KLNSio2NjX0qO9nifii/DxXa+DkaLWFjY2Mfwc63mLcEbRuzaYfyUoqNjY19Hrt9HWdfkJLhfl4aNy/0YGNjY5/B3hew/Vbau7W57VvqNjY2NvYj2fkRzNqAu8KD2es7w2qJjY2N/WD2vdtqr/xZbSD9oohiY2NjH8SebXH2ms7+iPOWJi+62NjY2Gew2023ZWPWruQjquGRYWNjYx/HbqPfJBjOh1B5wDxrgeqgFxsbG/sPsGchcftpvqYeJ2FjY2P/efZ+AJS0NPma+mfDxsbGPo69KQmbb70jYChaEWxsbOwj2O1QZhastmP9TcG7+ZUdbGxs7Oey/wFLiuTAhThX+AAAAABJRU5ErkJggg==" alt="微信分享二维码">
+</div>
+
+
+
+
+    <script src="//cdn.bootcss.com/node-waves/0.7.4/waves.min.js"></script>
+<script>
+var BLOG = { ROOT: '/', SHARE: true, REWARD: false };
+
+
+</script>
+
+<script src="//unpkg.com/hexo-theme-material-indigo@latest/js/main.min.js"></script>
+
+
+<div class="search-panel" id="search-panel">
+    <ul class="search-result" id="search-result"></ul>
+</div>
+<template id="search-tpl">
+<li class="item">
+    <a href="{path}" class="waves-block waves-effect">
+        <div class="title ellipsis" title="{title}">{title}</div>
+        <div class="flex-row flex-middle">
+            <div class="tags ellipsis">
+                {tags}
+            </div>
+            <time class="flex-col time">{date}</time>
+        </div>
+    </a>
+</li>
+</template>
+
+<script src="//unpkg.com/hexo-theme-material-indigo@latest/js/search.min.js" async></script>
+
+
+
+
+
+
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+<script>
+(function() {
+    var OriginTitile = document.title, titleTime;
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            document.title = '大爷别走呀！';
+            clearTimeout(titleTime);
+        } else {
+            document.title = '来啦，老弟!';
+            titleTime = setTimeout(function() {
+                document.title = OriginTitile;
+            },2000);
+        }
+    });
+})();
+</script>
+
+
+
+</body>
+</html>
