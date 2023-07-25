@@ -14,7 +14,7 @@
     
     
     
-    <title>分布式事务之 2PC 的 XA 规范实现.md | Jerry Chan</title>
+    <title>分布式事务之 2PC 的 XA 规范实现 | Jerry Chan</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     
     <meta name="theme-color" content="#3F51B5">
@@ -23,14 +23,14 @@
     <meta name="keywords" content="分布式事务">
     <meta name="description" content="刚开始学习分布式事务时，第一个解决方案就是 2PC，但是一直没有写过 demo，也没有生产中使用过这种方案，随意是既熟悉又陌生。本文只在实现一个 2PC XA方案的 demo，万一将来需要用到这种方案不至于少也不懂。  2PC 简介2PC 主要分为两个阶段，准备阶段、提交阶段。 准备阶段：TM（事务管理器）向 RM（资源管理器）发送 Prepare 消息，RM 本地执行事务，此时 RM 并未提交">
 <meta property="og:type" content="article">
-<meta property="og:title" content="分布式事务之 2PC 的 XA 规范实现.md">
-<meta property="og:url" content="http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0-md/index.html">
+<meta property="og:title" content="分布式事务之 2PC 的 XA 规范实现">
+<meta property="og:url" content="http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0/index.html">
 <meta property="og:site_name" content="Jerry Chan">
 <meta property="og:description" content="刚开始学习分布式事务时，第一个解决方案就是 2PC，但是一直没有写过 demo，也没有生产中使用过这种方案，随意是既熟悉又陌生。本文只在实现一个 2PC XA方案的 demo，万一将来需要用到这种方案不至于少也不懂。  2PC 简介2PC 主要分为两个阶段，准备阶段、提交阶段。 准备阶段：TM（事务管理器）向 RM（资源管理器）发送 Prepare 消息，RM 本地执行事务，此时 RM 并未提交">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://example.com/images/d168e9ad85a69717fcd5f4296458e76b.png">
 <meta property="article:published_time" content="2023-07-25T02:11:00.000Z">
-<meta property="article:modified_time" content="2023-07-25T02:13:03.010Z">
+<meta property="article:modified_time" content="2023-07-25T02:16:46.841Z">
 <meta property="article:author" content="Jerry Chan">
 <meta property="article:tag" content="分布式事务">
 <meta name="twitter:card" content="summary">
@@ -115,7 +115,7 @@
         <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light on" id="menu-toggle">
           <i class="icon icon-lg icon-navicon"></i>
         </a>
-        <div class="flex-col header-title ellipsis">分布式事务之 2PC 的 XA 规范实现.md</div>
+        <div class="flex-col header-title ellipsis">分布式事务之 2PC 的 XA 规范实现</div>
         
         <div class="search-wrap" id="search-wrap">
             <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="back">
@@ -137,7 +137,7 @@
 <header class="content-header post-header">
 
     <div class="container fade-scale">
-        <h1 class="title">分布式事务之 2PC 的 XA 规范实现.md</h1>
+        <h1 class="title">分布式事务之 2PC 的 XA 规范实现</h1>
         <h5 class="subtitle">
             
                 <time datetime="2023-07-25T02:11:00.000Z" itemprop="datePublished" class="page-time">
@@ -165,11 +165,11 @@
     </aside>
 
 
-<article id="post-分布式事务之-2PC-的-XA-规范实现-md"
+<article id="post-分布式事务之-2PC-的-XA-规范实现"
   class="post-article article-type-post fade" itemprop="blogPost">
 
     <div class="post-card">
-        <h1 class="post-card-title">分布式事务之 2PC 的 XA 规范实现.md</h1>
+        <h1 class="post-card-title">分布式事务之 2PC 的 XA 规范实现</h1>
         <div class="post-meta">
             <time class="post-time" title="2023-07-25 10:11:00" datetime="2023-07-25T02:11:00.000Z"  itemprop="datePublished">2023-07-25</time>
 
@@ -238,7 +238,7 @@
     <div class="content">
         
 <span class="post-time">
-    最后更新时间：<time datetime="2023-07-25T02:13:03.010Z" itemprop="dateUpdated">2023-07-25 10:13:03</time>
+    最后更新时间：<time datetime="2023-07-25T02:16:46.841Z" itemprop="dateUpdated">2023-07-25 10:16:46</time>
 </span><br>
 
 
@@ -268,7 +268,7 @@
 <div class="page-share" id="pageShare">
     <ul class="reset share-icons">
       <li>
-        <a class="weibo share-sns" target="_blank" href="http://service.weibo.com/share/share.php?url=http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0-md/&title=《分布式事务之 2PC 的 XA 规范实现.md》 — Jerry Chan&pic=http://example.com/img/avatar.jpg" data-title="微博">
+        <a class="weibo share-sns" target="_blank" href="http://service.weibo.com/share/share.php?url=http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0/&title=《分布式事务之 2PC 的 XA 规范实现》 — Jerry Chan&pic=http://example.com/img/avatar.jpg" data-title="微博">
           <i class="icon icon-weibo"></i>
         </a>
       </li>
@@ -278,22 +278,22 @@
         </a>
       </li>
       <li>
-        <a class="qq share-sns" target="_blank" href="http://connect.qq.com/widget/shareqq/index.html?url=http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0-md/&title=《分布式事务之 2PC 的 XA 规范实现.md》 — Jerry Chan&source=" data-title=" QQ">
+        <a class="qq share-sns" target="_blank" href="http://connect.qq.com/widget/shareqq/index.html?url=http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0/&title=《分布式事务之 2PC 的 XA 规范实现》 — Jerry Chan&source=" data-title=" QQ">
           <i class="icon icon-qq"></i>
         </a>
       </li>
       <li>
-        <a class="facebook share-sns" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0-md/" data-title=" Facebook">
+        <a class="facebook share-sns" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0/" data-title=" Facebook">
           <i class="icon icon-facebook"></i>
         </a>
       </li>
       <li>
-        <a class="twitter share-sns" target="_blank" href="https://twitter.com/intent/tweet?text=《分布式事务之 2PC 的 XA 规范实现.md》 — Jerry Chan&url=http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0-md/&via=http://example.com" data-title=" Twitter">
+        <a class="twitter share-sns" target="_blank" href="https://twitter.com/intent/tweet?text=《分布式事务之 2PC 的 XA 规范实现》 — Jerry Chan&url=http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0/&via=http://example.com" data-title=" Twitter">
           <i class="icon icon-twitter"></i>
         </a>
       </li>
       <li>
-        <a class="google share-sns" target="_blank" href="https://plus.google.com/share?url=http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0-md/" data-title=" Google+">
+        <a class="google share-sns" target="_blank" href="https://plus.google.com/share?url=http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0/" data-title=" Google+">
           <i class="icon icon-google-plus"></i>
         </a>
       </li>
@@ -394,7 +394,7 @@
 <div class="global-share" id="globalShare">
     <ul class="reset share-icons">
       <li>
-        <a class="weibo share-sns" target="_blank" href="http://service.weibo.com/share/share.php?url=http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0-md/&title=《分布式事务之 2PC 的 XA 规范实现.md》 — Jerry Chan&pic=http://example.com/img/avatar.jpg" data-title="微博">
+        <a class="weibo share-sns" target="_blank" href="http://service.weibo.com/share/share.php?url=http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0/&title=《分布式事务之 2PC 的 XA 规范实现》 — Jerry Chan&pic=http://example.com/img/avatar.jpg" data-title="微博">
           <i class="icon icon-weibo"></i>
         </a>
       </li>
@@ -404,22 +404,22 @@
         </a>
       </li>
       <li>
-        <a class="qq share-sns" target="_blank" href="http://connect.qq.com/widget/shareqq/index.html?url=http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0-md/&title=《分布式事务之 2PC 的 XA 规范实现.md》 — Jerry Chan&source=" data-title=" QQ">
+        <a class="qq share-sns" target="_blank" href="http://connect.qq.com/widget/shareqq/index.html?url=http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0/&title=《分布式事务之 2PC 的 XA 规范实现》 — Jerry Chan&source=" data-title=" QQ">
           <i class="icon icon-qq"></i>
         </a>
       </li>
       <li>
-        <a class="facebook share-sns" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0-md/" data-title=" Facebook">
+        <a class="facebook share-sns" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0/" data-title=" Facebook">
           <i class="icon icon-facebook"></i>
         </a>
       </li>
       <li>
-        <a class="twitter share-sns" target="_blank" href="https://twitter.com/intent/tweet?text=《分布式事务之 2PC 的 XA 规范实现.md》 — Jerry Chan&url=http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0-md/&via=http://example.com" data-title=" Twitter">
+        <a class="twitter share-sns" target="_blank" href="https://twitter.com/intent/tweet?text=《分布式事务之 2PC 的 XA 规范实现》 — Jerry Chan&url=http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0/&via=http://example.com" data-title=" Twitter">
           <i class="icon icon-twitter"></i>
         </a>
       </li>
       <li>
-        <a class="google share-sns" target="_blank" href="https://plus.google.com/share?url=http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0-md/" data-title=" Google+">
+        <a class="google share-sns" target="_blank" href="https://plus.google.com/share?url=http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0/" data-title=" Google+">
           <i class="icon icon-google-plus"></i>
         </a>
       </li>
@@ -430,7 +430,7 @@
 <div class="page-modal wx-share" id="wxShare">
     <a class="close" href="javascript:;"><i class="icon icon-close"></i></a>
     <p>扫一扫，分享到微信</p>
-    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASYAAAEmCAAAAADqr2IGAAAEf0lEQVR42u3aS27bQBAFQN//0g6QbSL5vW4K4NDFlaBY5EwxQE9/vr7i6/vvlX9+9a+vrq/yev+sf79/v87LLkyYMGHCdEumZAPvv0muT7+qFq5+eZgwYcKE6XCm/HYtcXK3HPc9estXPAUTJkyYMP0Cpvdp54apTVOT40v+ejBhwoQJE6Z8ufuybFKoze+fg2LChAkTpmcztSH2c6E6T1bzInJSvL6sFo4JEyZMmG7G9InBnVM+X3xhwoQJE6abMc2Gb/LjQhKA8xR6H/6Hu8aECRMmTMcyJUtvi7/5gM4sIu/j+PBZmDBhwoTpQKZZaG9Hc5IwPyvOzp6Vv8j/nJswYcKECdOBTLOGYl42TZLPeoymbHPmzdf/3B8TJkyYMB3LlA/i5InoDw8rE+b2IDI7TFyQf2PChAkTplsy5ZZ5uTZnTYrFbYl2dpjAhAkTJky/h2k41BIH2s9teDMw9MMxBRMmTJgwHc60mfqZfd+Wj5P7tyspXicmTJgwYXoEUxImZ+nofgNXtSrbvWDChAkTptOZ9sXf94nlVe3Gzfhp+9ziPwEmTJgwYTqKKSn4bh4zC7otZZJUR4XdV2vDhAkTJkxHMe0Hd/bNxU8M97QHlB/Sb0yYMGHC9AimdpylhSuWFRd8P1H2fdnOxIQJEyZMBzJtCrWb8JxUmtuX0eIOL0yYMGHCdBTTplSahOR8NCe/W/va8hGil3+DCRMmTJiOZcq3lC9olk7nxeW2YXlZ3MeECRMmTAcy5S3GWaKbb7sdBsoT9VmRGhMmTJgwPYOp/dksEW1T2TYhv/aY8vIwgQkTJkyYHso0Sz7z9HXfTM1/1T6rOBBgwoQJE6ZbMuW33hdYZ0XYHGg2HhQ9HRMmTJgwHcs0C8+b4Jojtr/dp/SYMGHChOmpTJ8br9kUdvO0+XOUmDBhwoTpGUx5sM8bk22BuF7cpqpd7hcTJkyYMJ3OlAzizJY4a3Dux1XbtUW/xYQJEyZMBzLNks+2xdgmmbMWZltcrk9GmDBhwoTpQUztaMuGJmeaHVk2KfoPBwJMmDBhwvQIpnwzbQy9qvjbtjzr/WLChAkTpkcwteMv1yac+WEieXrCneBiwoQJE6YnMc3Cc9tuzIu2eSF41lItXgYmTJgwYTqcaRgmy0Zm/gI2d8uPMkVZGRMmTJgwPYKpDbT5ZtrPCcFsne2zMGHChAnTM5jyRDEpyLbjPvUYTbyGFq6oEGDChAkTpgOZ2tLnJgBfCzQbPCpGhTBhwoQJ07FM+U03hdp20e2oTZt+50eWYlmYMGHChOmWTN/lNTs0bIrF+UuaJd7Ra8aECRMmTMcyzQLk96XXrN04TFkXKTomTJgwYTqXKd9GXmy9qhTbJsntPYsGJyZMmDBhOpypDZz5Ny3ZrCh8bUG5KI9jwoQJE6YHMe0LwW3gz7+/qkX68j6YMGHChOnXMG2agpu/3JeA24YrJkyYMGF6ElMeJjfpaNsuTYJ92+DMd7GqhWPChAkTptswzbaRb3LTNJ2VgzdjPasLEyZMmDDdi+kPiFLx8wjuM/oAAAAASUVORK5CYII=" alt="微信分享二维码">
+    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASYAAAEmCAAAAADqr2IGAAAEfElEQVR42u3ay04cMRAFUP7/p4mUVaQIuLeqScbm9AoNg7t9Gsn1enuLr/ffV/LJn59//vPf309+mz9P8lQPX5gwYcKE6SWZ3j+9coL8r2YPmtw9h8v3jgkTJkyY7mDKl2uJZyFFHgrMnjnfOyZMmDBh+jlMs4P5c9B8/adWw4QJEyZMmDaP2yaZbX21LUPnoJgwYcKE6W6m9ojdtA8/L/7myWrOnZShH6uFY8KECROmF2PatxLP/fkb55swYcKECdMLML2X176YmyfGswQ4Dy+KXWPChAkTpmOZkrSwLf4m7cP2SN7/1Yy4yJ4xYcKECdMhTG2bcN+8bA/vp+5Vl5sxYcKECdOBTBuC2YjP7KhuQ5M2uPli15gwYcKE6VimpL33xR8Hn28S5gS0JRi2NjFhwoQJ04FMTz36HitvOr6V1+ylYsKECROmn8CUJIftapsmZTsqlFS4o38UTJgwYcJ0OFNblk0O7Nmwab7O5pstPSZMmDBhuoMpOSZnqe+zo6KbVuVwL5gwYcKE6VimWYNzVhTOOZ4dP23bnMXrxIQJEyZMRzElB3m+sYRyUw7Ok968yBuVqjFhwoQJ07FMswfNEdtP8hAkuWavChMmTJgw3cHUHrf5ATx7rNl4zVNl3w/3iAkTJkyYDmTKD9G2zZkf27OBoTyIGUZAz24AEyZMmDD9V6ZZqbQtwm7y77Y4m4cORcSECRMmTJgOZEqWaLfXJsYt0H5UaHPuY8KECROmm5jyhLY9tmdDQrOGZXsvTJgwYcJ0K9OspJuknS1om5DnzzC7FyZMmDBhOpepbUNuOn15wjwj2I8HfYiICRMmTJgOZ5oVQ/eDO21QkhR2N/f68O6YMGHChOlYpmQzs7S2BdqUXNuDP2+sYsKECROmO5jaZHVfTk22NxsnepYSEyZMmDDdwZQ3+fLl2qQ0P6RX5dpyNUyYMGHCdAdTm6DODtRZkjwr6c6KzpgwYcKE6T6mTbOwLRAnCfZsxGcz1hP9Q2DChAkTpiuY8iJsm3wmKydp6iyVzYeNPvw+JkyYMGG6jmmWlP7L5mi+/uxlYMKECROmO5g24y95epmnu8nnefiSp+gJKyZMmDBhOpdplrjONjzbQN4KbY/24mVgwoQJE6YDmfKG5azluU96E+JZKFOk65gwYcKE6XCm2cjLJqFt25ObgGBzL0yYMGHCdBNTGxC0YUTL2r7C/JivoTFhwoQJ0xVMbenz+1Lcp8KUttRbpL6YMGHChOkQpnzR2QDNrMXYjtq0aXYeshSPhQkTJkyYXpLpvbz2QUPbvEwO+xaifSpMmDBhwnQu0z6OSJiePbyLgZtyhfz1YMKECROms5iSICDZXhIKtKXYNklu1ywanJgwYcKE6XCmTWKZtCdzsllR+NmCch0TYcKECROmK5hmAzezIm++8ix0qEMQTJgwYcL0Y5ja9mde0p0d/JsgpggaMGHChAnT4UxtkXc2+NKO5uxT9Fko81g7ExMmTJgwvQDTZnBnhjhrjrYjRLOxntWFCRMmTJhei+kXfu6qO+p3QNkAAAAASUVORK5CYII=" alt="微信分享二维码">
 </div>
 
 
