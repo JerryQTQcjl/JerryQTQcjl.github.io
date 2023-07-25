@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+
+    
+
+    
+
+
+
+    <meta charset="utf-8">
+    
+    
+    
+    
+    <title>分布式事务之 2PC 的 XA 规范实现.md | Jerry Chan</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    
+    <meta name="theme-color" content="#3F51B5">
+    
+    
+    <meta name="keywords" content="分布式事务">
+    <meta name="description" content="刚开始学习分布式事务时，第一个解决方案就是 2PC，但是一直没有写过 demo，也没有生产中使用过这种方案，随意是既熟悉又陌生。本文只在实现一个 2PC XA方案的 demo，万一将来需要用到这种方案不至于少也不懂。  2PC 简介2PC 主要分为两个阶段，准备阶段、提交阶段。 准备阶段：TM（事务管理器）向 RM（资源管理器）发送 Prepare 消息，RM 本地执行事务，此时 RM 并未提交">
+<meta property="og:type" content="article">
+<meta property="og:title" content="分布式事务之 2PC 的 XA 规范实现.md">
+<meta property="og:url" content="http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0-md/index.html">
+<meta property="og:site_name" content="Jerry Chan">
+<meta property="og:description" content="刚开始学习分布式事务时，第一个解决方案就是 2PC，但是一直没有写过 demo，也没有生产中使用过这种方案，随意是既熟悉又陌生。本文只在实现一个 2PC XA方案的 demo，万一将来需要用到这种方案不至于少也不懂。  2PC 简介2PC 主要分为两个阶段，准备阶段、提交阶段。 准备阶段：TM（事务管理器）向 RM（资源管理器）发送 Prepare 消息，RM 本地执行事务，此时 RM 并未提交">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/d168e9ad85a69717fcd5f4296458e76b.png">
+<meta property="article:published_time" content="2023-07-25T02:11:00.000Z">
+<meta property="article:modified_time" content="2023-07-25T02:13:03.010Z">
+<meta property="article:author" content="Jerry Chan">
+<meta property="article:tag" content="分布式事务">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/d168e9ad85a69717fcd5f4296458e76b.png">
+    
+        <link rel="alternate" type="application/atom+xml" title="Jerry Chan" href="/atom.xml">
+    
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="stylesheet" href="//unpkg.com/hexo-theme-material-indigo@latest/css/style.css">
+    <script>window.lazyScripts=[]</script>
+
+    <!-- custom head -->
+    
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body>
+    <div id="loading" class="active"></div>
+
+    <aside id="menu" class="hide" >
+  <div class="inner flex-row-vertical">
+    <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="menu-off">
+        <i class="icon icon-lg icon-close"></i>
+    </a>
+    <div class="brand-wrap" style="background-image:url(/img/brand.jpg)">
+      <div class="brand">
+        <a href="/" class="avatar waves-effect waves-circle waves-light">
+          <img src="/img/avatar.jpg">
+        </a>
+        <hgroup class="introduce">
+          <h5 class="nickname">Jerry Chan</h5>
+          <a href="mailto:jerrtqtqcjl@gmail.com" title="jerrtqtqcjl@gmail.com" class="mail">jerrtqtqcjl@gmail.com</a>
+        </hgroup>
+      </div>
+    </div>
+    <div class="scroll-wrap flex-col">
+      <ul class="nav">
+        
+            <li class="waves-block waves-effect">
+              <a href="/"  >
+                <i class="icon icon-lg icon-home"></i>
+                主页
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/archives"  >
+                <i class="icon icon-lg icon-archives"></i>
+                归档
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/tags"  >
+                <i class="icon icon-lg icon-tags"></i>
+                标签
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/categories"  >
+                <i class="icon icon-lg icon-th-list"></i>
+                目录
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="https://github.com/JerryQTQcjl" target="_blank" >
+                <i class="icon icon-lg icon-github"></i>
+                Github
+              </a>
+            </li>
+        
+      </ul>
+    </div>
+  </div>
+</aside>
+
+    <main id="main">
+        <header class="top-header" id="header">
+    <div class="flex-row">
+        <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light on" id="menu-toggle">
+          <i class="icon icon-lg icon-navicon"></i>
+        </a>
+        <div class="flex-col header-title ellipsis">分布式事务之 2PC 的 XA 规范实现.md</div>
+        
+        <div class="search-wrap" id="search-wrap">
+            <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="back">
+                <i class="icon icon-lg icon-chevron-left"></i>
+            </a>
+            <input type="text" id="key" class="search-input" autocomplete="off" placeholder="输入感兴趣的关键字">
+            <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="search">
+                <i class="icon icon-lg icon-search"></i>
+            </a>
+        </div>
+        
+        
+        <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="menuShare">
+            <i class="icon icon-lg icon-share-alt"></i>
+        </a>
+        
+    </div>
+</header>
+<header class="content-header post-header">
+
+    <div class="container fade-scale">
+        <h1 class="title">分布式事务之 2PC 的 XA 规范实现.md</h1>
+        <h5 class="subtitle">
+            
+                <time datetime="2023-07-25T02:11:00.000Z" itemprop="datePublished" class="page-time">
+  2023-07-25
+</time>
+
+
+            
+        </h5>
+    </div>
+
+    
+
+
+</header>
+
+
+<div class="container body-wrap">
+    
+    <aside class="post-widget">
+        <nav class="post-toc-wrap post-toc-shrink" id="post-toc">
+            <h4>TOC</h4>
+            <ol class="post-toc"><li class="post-toc-item post-toc-level-4"><a class="post-toc-link" href="#2PC-简介"><span class="post-toc-number">1.</span> <span class="post-toc-text">2PC 简介</span></a></li><li class="post-toc-item post-toc-level-4"><a class="post-toc-link" href="#XA-方案"><span class="post-toc-number">2.</span> <span class="post-toc-text">XA 方案</span></a></li><li class="post-toc-item post-toc-level-4"><a class="post-toc-link" href="#参考"><span class="post-toc-number">3.</span> <span class="post-toc-text">参考</span></a></li></ol>
+        </nav>
+    </aside>
+
+
+<article id="post-分布式事务之-2PC-的-XA-规范实现-md"
+  class="post-article article-type-post fade" itemprop="blogPost">
+
+    <div class="post-card">
+        <h1 class="post-card-title">分布式事务之 2PC 的 XA 规范实现.md</h1>
+        <div class="post-meta">
+            <time class="post-time" title="2023-07-25 10:11:00" datetime="2023-07-25T02:11:00.000Z"  itemprop="datePublished">2023-07-25</time>
+
+            
+
+
+            
+<span id="busuanzi_container_page_pv" title="文章总阅读量" style='display:none'>
+    <i class="icon icon-eye icon-pr"></i><span id="busuanzi_value_page_pv"></span>
+</span>
+
+
+        </div>
+        <div class="post-content" id="post-content" itemprop="postContent">
+            <blockquote>
+<p>刚开始学习分布式事务时，第一个解决方案就是 2PC，但是一直没有写过 demo，也没有生产中使用过这种方案，随意是既熟悉又陌生。本文只在实现一个 2PC XA方案的 demo，万一将来需要用到这种方案不至于少也不懂。</p>
+</blockquote>
+<h4 id="2PC-简介"><a href="#2PC-简介" class="headerlink" title="2PC 简介"></a>2PC 简介</h4><p>2PC 主要分为两个阶段，准备阶段、提交阶段。</p>
+<p><strong>准备阶段</strong>：TM（事务管理器）向 RM（资源管理器）发送 Prepare 消息，RM 本地执行事务，此时 RM 并未提交本地事务（上锁），RM 发送执行成功/失败给到 TM</p>
+<p><strong>提交阶段</strong>：TM 向 RM 发送 Commit/Rollback 消息，RM 根据 TM 发送的消息执行提交或回滚本地事务。</p>
+<p>以下是网上找的一张 2PC 的流程图：</p>
+<img src="/images/d168e9ad85a69717fcd5f4296458e76b.png" alt="截图" style="zoom:80%;" />
+
+<h4 id="XA-方案"><a href="#XA-方案" class="headerlink" title="XA 方案"></a>XA 方案</h4><blockquote>
+<p>2PC 的传统方案是在数据库层面实现的，如 Oracle、MySQL 都支持 2PC 协议，为了统一标准减少行业内不必要的对接成本，需要制定标准化的处理模型及接口标准，国际开放标准组织 Open Group 定义了分布式事务处理模型DTP（Distributed Transaction Processing Reference Model）。</p>
+</blockquote>
+<p><strong>DTP 模型定义如下角色：</strong></p>
+<ul>
+<li>AP（Application Program）：即应用程序，可以理解为使用 DTP 分布式事务的程序。</li>
+<li>RM（Resource Manager）：即资源管理器，可以理解为事务的参与者，一般情况下是指一个数据库实例，通过资源管理器对该数据库进行控制，资源管理器控制着分支事务。</li>
+<li>TM（Transaction Manager）：事务管理器，负责协调和管理事务，事务管理器控制着全局事务，管理事务生命周期，并协调各个 RM。全局事务是指分布式事务处理环境中，需要操作多个数据库共同完成一个工作，这个工作即是一个全局事务。</li>
+<li>DTP 模型定义TM和RM之间通讯的接口规范叫 XA，简单理解为数据库提供的 2PC 接口协议，基于数据库的 XA 协议来实现 2PC 又称为 XA 方案</li>
+</ul>
+<p><strong>XA 执行流程：（作者比较懒，什么都没留下）</strong></p>
+<blockquote>
+<p>流程可以参看大佬的博客：<a href="https://zhuanlan.zhihu.com/p/263555694" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/263555694</a></p>
+</blockquote>
+<p><strong>具体实现：</strong></p>
+<blockquote>
+<p> Java事务API（JTA：Java Transaction API）和它的同胞Java事务服务（JTS：Java Transaction Service），为J2EE平台提供了分布式事务服务（distributed transaction）的能力。 某种程度上，可以认为JTA规范是XA规范的Java版，其把XA规范中规定的DTP模型交互接口抽象成Java接口中的方法，并规定每个方法要实现什么样的功能。</p>
+</blockquote>
+<p>下面的例子基于 Atomikos TransactionEssentials 实现 JTA： </p>
+<p>所需要依赖，这里用的 Gradle，用的 Maven 家人们可以自行找下依赖</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">implementation platform(<span class="string">'org.springframework.boot:spring-boot-dependencies:2.7.5'</span>)</span><br><span class="line">implementation <span class="string">'com.atomikos:transactions-jdbc:6.0.0'</span></span><br><span class="line">implementation <span class="string">'com.atomikos:transactions-jta:6.0.0'</span></span><br><span class="line">implementation <span class="string">'javax.transaction:jta:1.1'</span></span><br><span class="line">implementation <span class="string">'com.alibaba:druid:1.2.18'</span></span><br><span class="line">implementation <span class="string">'org.springframework.boot:spring-boot-starter-web'</span></span><br><span class="line">implementation <span class="string">'org.springframework.boot:spring-boot-test'</span></span><br><span class="line">implementation <span class="string">'org.springframework.boot:spring-boot-starter-test'</span></span><br><span class="line">implementation <span class="string">'org.mybatis.spring.boot:mybatis-spring-boot-starter:2.2.1'</span></span><br><span class="line">implementation <span class="string">'org.springframework.boot:spring-boot'</span></span><br><span class="line">implementation <span class="string">'org.springframework:spring-tx'</span></span><br><span class="line">implementation <span class="string">'mysql:mysql-connector-java:8.0.33'</span></span><br></pre></td></tr></table></figure>
+
+<p>数据库配置，这里我在本地中启动了两个 Mysql 实例，数据库只要能支持 XA 协议即可</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 这里用的Druid，其他连接池只要实现了javax.sql.XADataSource即可</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">AbstractDataSourceConfig</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> DruidXADataSource <span class="title">createDruidXADataSource</span><span class="params">(String url, String username, String password)</span> </span>&#123;</span><br><span class="line">        DruidXADataSource druidXADataSource = <span class="keyword">new</span> DruidXADataSource();</span><br><span class="line">        <span class="comment">//&lt;a href="https://github.com/alibaba/druid/wiki/DruidDataSource%E9%85%8D%E7%BD%AE%E5%B1%9E%E6%80%A7%E5%88%97%E8%A1%A8"/&gt;</span></span><br><span class="line">        druidXADataSource.setUrl(url);</span><br><span class="line">        druidXADataSource.setUsername(username);</span><br><span class="line">        druidXADataSource.setPassword(password);</span><br><span class="line">        druidXADataSource.setMaxActive(<span class="number">5</span>);</span><br><span class="line">        druidXADataSource.setInitialSize(<span class="number">1</span>);</span><br><span class="line">        druidXADataSource.setMaxWait(<span class="number">15000</span>);</span><br><span class="line">        druidXADataSource.setMinIdle(<span class="number">1</span>);</span><br><span class="line">        druidXADataSource.setTestOnBorrow(<span class="keyword">false</span>);</span><br><span class="line">        druidXADataSource.setTestWhileIdle(<span class="keyword">true</span>);</span><br><span class="line">        druidXADataSource.setValidationQuery(<span class="string">"select 1"</span>);</span><br><span class="line">        druidXADataSource.setTimeBetweenEvictionRunsMillis(<span class="number">60000</span>);</span><br><span class="line">        druidXADataSource.setMinEvictableIdleTimeMillis(<span class="number">300000</span>);</span><br><span class="line">        druidXADataSource.setAsyncInit(<span class="keyword">true</span>);</span><br><span class="line">        <span class="keyword">return</span> druidXADataSource;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 这里是3306端口的实例配置</span></span><br><span class="line"><span class="comment"> */</span> </span><br><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="meta">@MapperScan</span>(value = <span class="string">"com.jl.demo.spring.repository.mapper.db3306"</span>, sqlSessionFactoryRef = <span class="string">"sqlSessionFactory3306"</span>)</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DataSourceConfig3306</span> <span class="keyword">extends</span> <span class="title">AbstractDataSourceConfig</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> DataSource <span class="title">dataSource3306</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        AtomikosDataSourceBean datasource = <span class="keyword">new</span> AtomikosDataSourceBean();</span><br><span class="line">        DruidXADataSource druidXADataSource = createDruidXADataSource(<span class="string">"jdbc:mysql://localhost:3306/xa_test"</span>, <span class="string">"root"</span>, <span class="string">"123456"</span>);</span><br><span class="line">        datasource.setXaDataSource(druidXADataSource);</span><br><span class="line">        <span class="comment">//atomikos要求为每个AtomikosDataSourceBean名称</span></span><br><span class="line">        datasource.setUniqueResourceName(<span class="string">"local_3306"</span>);</span><br><span class="line">        <span class="keyword">return</span> datasource;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> SqlSessionFactory <span class="title">sqlSessionFactory3306</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        SqlSessionFactoryBean sqlSessionFactoryBean = <span class="keyword">new</span> SqlSessionFactoryBean();</span><br><span class="line">        sqlSessionFactoryBean.setDataSource(dataSource3306());</span><br><span class="line">        PathMatchingResourcePatternResolver resolver = <span class="keyword">new</span> PathMatchingResourcePatternResolver();</span><br><span class="line">        sqlSessionFactoryBean.setMapperLocations(resolver.getResources(<span class="string">"classpath:/mybatis/db3306/*.xml"</span>));</span><br><span class="line">        <span class="keyword">return</span> sqlSessionFactoryBean.getObject();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 这里是3308端口的实例配置</span></span><br><span class="line"><span class="comment"> */</span> </span><br><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="meta">@MapperScan</span>(value = <span class="string">"com.jl.demo.spring.repository.mapper.db3308"</span>, sqlSessionFactoryRef = <span class="string">"sqlSessionFactory3308"</span>)</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DataSourceConfig3308</span> <span class="keyword">extends</span> <span class="title">AbstractDataSourceConfig</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> DataSource <span class="title">dataSource3308</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        AtomikosDataSourceBean datasource = <span class="keyword">new</span> AtomikosDataSourceBean();</span><br><span class="line">        DruidXADataSource druidXADataSource = createDruidXADataSource(<span class="string">"jdbc:mysql://localhost:3308/xa_test"</span>, <span class="string">"root"</span>, <span class="string">"123456"</span>);</span><br><span class="line">        datasource.setXaDataSource(druidXADataSource);</span><br><span class="line">        datasource.setUniqueResourceName(<span class="string">"local_3308"</span>);</span><br><span class="line">        <span class="keyword">return</span> datasource;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> SqlSessionFactory <span class="title">sqlSessionFactory3308</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        SqlSessionFactoryBean sqlSessionFactoryBean = <span class="keyword">new</span> SqlSessionFactoryBean();</span><br><span class="line">        sqlSessionFactoryBean.setDataSource(dataSource3308());</span><br><span class="line">        PathMatchingResourcePatternResolver resolver = <span class="keyword">new</span> PathMatchingResourcePatternResolver();</span><br><span class="line">        sqlSessionFactoryBean.setMapperLocations(resolver.getResources(<span class="string">"classpath:/mybatis/db3308/*.xml"</span>));</span><br><span class="line">        <span class="keyword">return</span> sqlSessionFactoryBean.getObject();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>事务相关配置，spring 已经帮我们把 JtaTransactionManager 封装好了，底层使用的是我们传入的事务管理器</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TransactionConfig</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 配置atomikos事务管理器 </span></span><br><span class="line"><span class="comment">     */</span> </span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> UserTransactionManager <span class="title">userTransactionManager</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        UserTransactionManager userTransactionManager = <span class="keyword">new</span> UserTransactionManager();</span><br><span class="line">        userTransactionManager.setForceShutdown(<span class="keyword">false</span>);</span><br><span class="line">        <span class="keyword">return</span> userTransactionManager;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 配置jta事务管理器，底层使用atomikos事务管理器 </span></span><br><span class="line"><span class="comment">     */</span> </span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> TransactionManager <span class="title">jtaTransactionManager</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        JtaTransactionManager jtaTransactionManager = <span class="keyword">new</span> JtaTransactionManager();</span><br><span class="line">        jtaTransactionManager.setTransactionManager(userTransactionManager());</span><br><span class="line">        <span class="keyword">return</span> jtaTransactionManager;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>下面简单看一下 service 层，由于本例子主要是为了测试 Jta 是否能正确回滚两个数据库实例，所以用了两个相同的表，不含业务属性</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Service</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserServiceImpl</span> <span class="keyword">implements</span> <span class="title">UserService</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> UserMapper3306 userMapper3306;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> UserMapper3308 userMapper3308;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="meta">@Transactional</span>(transactionManager = <span class="string">"jtaTransactionManager"</span>, rollbackFor = Exception<span class="class">.<span class="keyword">class</span>)</span></span><br><span class="line"><span class="class">    <span class="title">public</span> <span class="title">void</span> <span class="title">insert</span>() </span>&#123;</span><br><span class="line">        User user3306 = <span class="keyword">new</span> User();</span><br><span class="line">        user3306.setName(<span class="string">"111"</span>);</span><br><span class="line">        userMapper3306.insert(user3306);</span><br><span class="line"></span><br><span class="line">        com.jl.demo.spring.repository.model.db3308.User user3308 = <span class="keyword">new</span> com.jl.demo.spring.repository.model.db3308.User();</span><br><span class="line">        user3308.setName(<span class="string">"222"</span>);</span><br><span class="line">        userMapper3308.insert(user3308);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(<span class="string">"test"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>测试代码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@ExtendWith</span>(SpringExtension<span class="class">.<span class="keyword">class</span>)</span></span><br><span class="line"><span class="class">@<span class="title">SpringBootTest</span>(<span class="title">classes</span> </span>= AtomikosTestApplication<span class="class">.<span class="keyword">class</span>)</span></span><br><span class="line"><span class="class"><span class="title">class</span> <span class="title">UserServiceImplTest</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> UserService userService;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Test</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">insert</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        userService.insert();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>仓库地址：<a href="https://github.com/JerryQTQcjl/distributed-transaction-demo/tree/master/atomikos-xa-demo" target="_blank" rel="noopener">https://github.com/JerryQTQcjl/distributed-transaction-demo/tree/master/atomikos-xa-demo</a></p>
+<h4 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h4><p><a href="http://www.tianshouzhi.com/api/tutorials/distributed_transaction/386" target="_blank" rel="noopener">http://www.tianshouzhi.com/api/tutorials/distributed_transaction/386</a></p>
+<p><a href="https://github.com/atomikos/transactions-essentials" target="_blank" rel="noopener">https://github.com/atomikos/transactions-essentials</a></p>
+
+        </div>
+
+        <blockquote class="post-copyright">
+    
+    <div class="content">
+        
+<span class="post-time">
+    最后更新时间：<time datetime="2023-07-25T02:13:03.010Z" itemprop="dateUpdated">2023-07-25 10:13:03</time>
+</span><br>
+
+
+        
+    </div>
+    
+    <footer>
+        <a href="http://example.com">
+            <img src="/img/avatar.jpg" alt="Jerry Chan">
+            Jerry Chan
+        </a>
+    </footer>
+</blockquote>
+
+        
+
+
+        <div class="post-footer">
+            
+	<ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/" rel="tag">分布式事务</a></li></ul>
+
+
+            
+<div class="page-share-wrap">
+    
+
+<div class="page-share" id="pageShare">
+    <ul class="reset share-icons">
+      <li>
+        <a class="weibo share-sns" target="_blank" href="http://service.weibo.com/share/share.php?url=http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0-md/&title=《分布式事务之 2PC 的 XA 规范实现.md》 — Jerry Chan&pic=http://example.com/img/avatar.jpg" data-title="微博">
+          <i class="icon icon-weibo"></i>
+        </a>
+      </li>
+      <li>
+        <a class="weixin share-sns wxFab" href="javascript:;" data-title="微信">
+          <i class="icon icon-weixin"></i>
+        </a>
+      </li>
+      <li>
+        <a class="qq share-sns" target="_blank" href="http://connect.qq.com/widget/shareqq/index.html?url=http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0-md/&title=《分布式事务之 2PC 的 XA 规范实现.md》 — Jerry Chan&source=" data-title=" QQ">
+          <i class="icon icon-qq"></i>
+        </a>
+      </li>
+      <li>
+        <a class="facebook share-sns" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0-md/" data-title=" Facebook">
+          <i class="icon icon-facebook"></i>
+        </a>
+      </li>
+      <li>
+        <a class="twitter share-sns" target="_blank" href="https://twitter.com/intent/tweet?text=《分布式事务之 2PC 的 XA 规范实现.md》 — Jerry Chan&url=http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0-md/&via=http://example.com" data-title=" Twitter">
+          <i class="icon icon-twitter"></i>
+        </a>
+      </li>
+      <li>
+        <a class="google share-sns" target="_blank" href="https://plus.google.com/share?url=http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0-md/" data-title=" Google+">
+          <i class="icon icon-google-plus"></i>
+        </a>
+      </li>
+    </ul>
+ </div>
+
+
+
+    <a href="javascript:;" id="shareFab" class="page-share-fab waves-effect waves-circle">
+        <i class="icon icon-share-alt icon-lg"></i>
+    </a>
+</div>
+
+
+
+        </div>
+    </div>
+
+    
+<nav class="post-nav flex-row flex-justify-between flex-row-reverse">
+  
+
+  
+    <div class="waves-block waves-effect next">
+      <a href="/2023/04/30/%E8%81%8A%E8%81%8A%E5%8F%8C%E4%BA%B2%E5%A7%94%E6%B4%BE%E6%9C%BA%E5%88%B6/" id="post-next" class="post-nav-link">
+        <div class="tips">Next <i class="icon icon-angle-right icon-lg icon-pl"></i></div>
+        <h4 class="title">聊聊双亲委派机制</h4>
+      </a>
+    </div>
+  
+</nav>
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</article>
+
+
+
+</div>
+
+        <footer class="footer">
+    <div class="top">
+        
+<p>
+    <span id="busuanzi_container_site_uv" style='display:none'>
+        站点总访客数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span id="busuanzi_container_site_pv" style='display:none'>
+        站点总访问量：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</p>
+
+
+        <p>
+            
+                <span><a href="/atom.xml" target="_blank" class="rss" title="rss"><i class="icon icon-lg icon-rss"></i></a></span>
+            
+            <span>博客内容遵循 <a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" target="_blank">知识共享 署名 - 非商业性 - 相同方式共享 4.0 国际协议</a></span>
+        </p>
+    </div>
+    <div class="bottom">
+        <p><span>Jerry Chan &copy; 2023</span>
+            <span>
+                
+                Power by <a href="http://hexo.io/" target="_blank">Hexo</a> Theme <a href="https://github.com/yscoder/hexo-theme-indigo" target="_blank">indigo</a>
+            </span>
+        </p>
+    </div>
+</footer>
+
+    </main>
+    <div class="mask" id="mask"></div>
+<a href="javascript:;" id="gotop" class="waves-effect waves-circle waves-light"><span class="icon icon-lg icon-chevron-up"></span></a>
+
+
+
+<div class="global-share" id="globalShare">
+    <ul class="reset share-icons">
+      <li>
+        <a class="weibo share-sns" target="_blank" href="http://service.weibo.com/share/share.php?url=http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0-md/&title=《分布式事务之 2PC 的 XA 规范实现.md》 — Jerry Chan&pic=http://example.com/img/avatar.jpg" data-title="微博">
+          <i class="icon icon-weibo"></i>
+        </a>
+      </li>
+      <li>
+        <a class="weixin share-sns wxFab" href="javascript:;" data-title="微信">
+          <i class="icon icon-weixin"></i>
+        </a>
+      </li>
+      <li>
+        <a class="qq share-sns" target="_blank" href="http://connect.qq.com/widget/shareqq/index.html?url=http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0-md/&title=《分布式事务之 2PC 的 XA 规范实现.md》 — Jerry Chan&source=" data-title=" QQ">
+          <i class="icon icon-qq"></i>
+        </a>
+      </li>
+      <li>
+        <a class="facebook share-sns" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0-md/" data-title=" Facebook">
+          <i class="icon icon-facebook"></i>
+        </a>
+      </li>
+      <li>
+        <a class="twitter share-sns" target="_blank" href="https://twitter.com/intent/tweet?text=《分布式事务之 2PC 的 XA 规范实现.md》 — Jerry Chan&url=http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0-md/&via=http://example.com" data-title=" Twitter">
+          <i class="icon icon-twitter"></i>
+        </a>
+      </li>
+      <li>
+        <a class="google share-sns" target="_blank" href="https://plus.google.com/share?url=http://example.com/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0-md/" data-title=" Google+">
+          <i class="icon icon-google-plus"></i>
+        </a>
+      </li>
+    </ul>
+ </div>
+
+
+<div class="page-modal wx-share" id="wxShare">
+    <a class="close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASYAAAEmCAAAAADqr2IGAAAEf0lEQVR42u3aS27bQBAFQN//0g6QbSL5vW4K4NDFlaBY5EwxQE9/vr7i6/vvlX9+9a+vrq/yev+sf79/v87LLkyYMGHCdEumZAPvv0muT7+qFq5+eZgwYcKE6XCm/HYtcXK3HPc9estXPAUTJkyYMP0Cpvdp54apTVOT40v+ejBhwoQJE6Z8ufuybFKoze+fg2LChAkTpmcztSH2c6E6T1bzInJSvL6sFo4JEyZMmG7G9InBnVM+X3xhwoQJE6abMc2Gb/LjQhKA8xR6H/6Hu8aECRMmTMcyJUtvi7/5gM4sIu/j+PBZmDBhwoTpQKZZaG9Hc5IwPyvOzp6Vv8j/nJswYcKECdOBTLOGYl42TZLPeoymbHPmzdf/3B8TJkyYMB3LlA/i5InoDw8rE+b2IDI7TFyQf2PChAkTplsy5ZZ5uTZnTYrFbYl2dpjAhAkTJky/h2k41BIH2s9teDMw9MMxBRMmTJgwHc60mfqZfd+Wj5P7tyspXicmTJgwYXoEUxImZ+nofgNXtSrbvWDChAkTptOZ9sXf94nlVe3Gzfhp+9ziPwEmTJgwYTqKKSn4bh4zC7otZZJUR4XdV2vDhAkTJkxHMe0Hd/bNxU8M97QHlB/Sb0yYMGHC9AimdpylhSuWFRd8P1H2fdnOxIQJEyZMBzJtCrWb8JxUmtuX0eIOL0yYMGHCdBTTplSahOR8NCe/W/va8hGil3+DCRMmTJiOZcq3lC9olk7nxeW2YXlZ3MeECRMmTAcy5S3GWaKbb7sdBsoT9VmRGhMmTJgwPYOp/dksEW1T2TYhv/aY8vIwgQkTJkyYHso0Sz7z9HXfTM1/1T6rOBBgwoQJE6ZbMuW33hdYZ0XYHGg2HhQ9HRMmTJgwHcs0C8+b4Jojtr/dp/SYMGHChOmpTJ8br9kUdvO0+XOUmDBhwoTpGUx5sM8bk22BuF7cpqpd7hcTJkyYMJ3OlAzizJY4a3Dux1XbtUW/xYQJEyZMBzLNks+2xdgmmbMWZltcrk9GmDBhwoTpQUztaMuGJmeaHVk2KfoPBwJMmDBhwvQIpnwzbQy9qvjbtjzr/WLChAkTpkcwteMv1yac+WEieXrCneBiwoQJE6YnMc3Cc9tuzIu2eSF41lItXgYmTJgwYTqcaRgmy0Zm/gI2d8uPMkVZGRMmTJgwPYKpDbT5ZtrPCcFsne2zMGHChAnTM5jyRDEpyLbjPvUYTbyGFq6oEGDChAkTpgOZ2tLnJgBfCzQbPCpGhTBhwoQJ07FM+U03hdp20e2oTZt+50eWYlmYMGHChOmWTN/lNTs0bIrF+UuaJd7Ra8aECRMmTMcyzQLk96XXrN04TFkXKTomTJgwYTqXKd9GXmy9qhTbJsntPYsGJyZMmDBhOpypDZz5Ny3ZrCh8bUG5KI9jwoQJE6YHMe0LwW3gz7+/qkX68j6YMGHChOnXMG2agpu/3JeA24YrJkyYMGF6ElMeJjfpaNsuTYJ92+DMd7GqhWPChAkTptswzbaRb3LTNJ2VgzdjPasLEyZMmDDdi+kPiFLx8wjuM/oAAAAASUVORK5CYII=" alt="微信分享二维码">
+</div>
+
+
+
+
+    <script src="//cdn.bootcss.com/node-waves/0.7.4/waves.min.js"></script>
+<script>
+var BLOG = { ROOT: '/', SHARE: true, REWARD: false };
+
+
+</script>
+
+<script src="//unpkg.com/hexo-theme-material-indigo@latest/js/main.min.js"></script>
+
+
+<div class="search-panel" id="search-panel">
+    <ul class="search-result" id="search-result"></ul>
+</div>
+<template id="search-tpl">
+<li class="item">
+    <a href="{path}" class="waves-block waves-effect">
+        <div class="title ellipsis" title="{title}">{title}</div>
+        <div class="flex-row flex-middle">
+            <div class="tags ellipsis">
+                {tags}
+            </div>
+            <time class="flex-col time">{date}</time>
+        </div>
+    </a>
+</li>
+</template>
+
+<script src="//unpkg.com/hexo-theme-material-indigo@latest/js/search.min.js" async></script>
+
+
+
+
+
+
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+<script>
+(function() {
+    var OriginTitile = document.title, titleTime;
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            document.title = '大爷别走呀！';
+            clearTimeout(titleTime);
+        } else {
+            document.title = '来啦，老弟!';
+            titleTime = setTimeout(function() {
+                document.title = OriginTitile;
+            },2000);
+        }
+    });
+})();
+</script>
+
+
+
+</body>
+</html>
