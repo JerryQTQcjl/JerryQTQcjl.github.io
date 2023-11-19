@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+
+    
+
+    
+
+
+
+    <meta charset="utf-8">
+    
+    
+    
+    
+    <title>记录一次增量数据一致性问题 | Jerry Chan</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    
+    <meta name="theme-color" content="#3F51B5">
+    
+    
+    <meta name="keywords" content="ES">
+    <meta name="description" content="最近收到客户投诉出现数据无法操作的问题，经过排查，Mysql 和 ES 数据出现一致性问题。我们的使用场景是定于 Mysql binlog 投递到 Kafka，增量服务顺序消费 Kafka 中的消息，更新 ES 中的文档。  索引结构在分析问题前先简单看下索引结构，这里只看出现问题的字段，主要就是用于存储标签 id 的一个 long 类型的字段，存的是一个数组。 12345678910&amp;#123">
+<meta property="og:type" content="article">
+<meta property="og:title" content="记录一次增量数据一致性问题">
+<meta property="og:url" content="http://example.com/2023/11/19/%E8%AE%B0%E5%BD%95%E4%B8%80%E6%AC%A1%E5%A2%9E%E9%87%8F%E6%95%B0%E6%8D%AE%E4%B8%80%E8%87%B4%E6%80%A7%E9%97%AE%E9%A2%98/index.html">
+<meta property="og:site_name" content="Jerry Chan">
+<meta property="og:description" content="最近收到客户投诉出现数据无法操作的问题，经过排查，Mysql 和 ES 数据出现一致性问题。我们的使用场景是定于 Mysql binlog 投递到 Kafka，增量服务顺序消费 Kafka 中的消息，更新 ES 中的文档。  索引结构在分析问题前先简单看下索引结构，这里只看出现问题的字段，主要就是用于存储标签 id 的一个 long 类型的字段，存的是一个数组。 12345678910&amp;#123">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-11-19T02:11:45.000Z">
+<meta property="article:modified_time" content="2023-11-19T15:11:48.859Z">
+<meta property="article:author" content="Jerry Chan">
+<meta property="article:tag" content="ES">
+<meta name="twitter:card" content="summary">
+    
+        <link rel="alternate" type="application/atom+xml" title="Jerry Chan" href="/atom.xml">
+    
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="stylesheet" href="//unpkg.com/hexo-theme-material-indigo@latest/css/style.css">
+    <script>window.lazyScripts=[]</script>
+
+    <!-- custom head -->
+    
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body>
+    <div id="loading" class="active"></div>
+
+    <aside id="menu" class="hide" >
+  <div class="inner flex-row-vertical">
+    <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="menu-off">
+        <i class="icon icon-lg icon-close"></i>
+    </a>
+    <div class="brand-wrap" style="background-image:url(/img/brand.jpg)">
+      <div class="brand">
+        <a href="/" class="avatar waves-effect waves-circle waves-light">
+          <img src="/img/avatar.jpg">
+        </a>
+        <hgroup class="introduce">
+          <h5 class="nickname">Jerry Chan</h5>
+          <a href="mailto:jerrtqtqcjl@gmail.com" title="jerrtqtqcjl@gmail.com" class="mail">jerrtqtqcjl@gmail.com</a>
+        </hgroup>
+      </div>
+    </div>
+    <div class="scroll-wrap flex-col">
+      <ul class="nav">
+        
+            <li class="waves-block waves-effect">
+              <a href="/"  >
+                <i class="icon icon-lg icon-home"></i>
+                主页
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/archives"  >
+                <i class="icon icon-lg icon-archives"></i>
+                归档
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/tags"  >
+                <i class="icon icon-lg icon-tags"></i>
+                标签
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/categories"  >
+                <i class="icon icon-lg icon-th-list"></i>
+                目录
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="https://github.com/JerryQTQcjl" target="_blank" >
+                <i class="icon icon-lg icon-github"></i>
+                Github
+              </a>
+            </li>
+        
+      </ul>
+    </div>
+  </div>
+</aside>
+
+    <main id="main">
+        <header class="top-header" id="header">
+    <div class="flex-row">
+        <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light on" id="menu-toggle">
+          <i class="icon icon-lg icon-navicon"></i>
+        </a>
+        <div class="flex-col header-title ellipsis">记录一次增量数据一致性问题</div>
+        
+        <div class="search-wrap" id="search-wrap">
+            <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="back">
+                <i class="icon icon-lg icon-chevron-left"></i>
+            </a>
+            <input type="text" id="key" class="search-input" autocomplete="off" placeholder="输入感兴趣的关键字">
+            <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="search">
+                <i class="icon icon-lg icon-search"></i>
+            </a>
+        </div>
+        
+        
+        <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="menuShare">
+            <i class="icon icon-lg icon-share-alt"></i>
+        </a>
+        
+    </div>
+</header>
+<header class="content-header post-header">
+
+    <div class="container fade-scale">
+        <h1 class="title">记录一次增量数据一致性问题</h1>
+        <h5 class="subtitle">
+            
+                <time datetime="2023-11-19T02:11:45.000Z" itemprop="datePublished" class="page-time">
+  2023-11-19
+</time>
+
+
+            
+        </h5>
+    </div>
+
+    
+
+
+</header>
+
+
+<div class="container body-wrap">
+    
+    <aside class="post-widget">
+        <nav class="post-toc-wrap post-toc-shrink" id="post-toc">
+            <h4>TOC</h4>
+            <ol class="post-toc"><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#索引结构"><span class="post-toc-number">1.</span> <span class="post-toc-text">索引结构</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#问题分析"><span class="post-toc-number">2.</span> <span class="post-toc-text">问题分析</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#解决方案"><span class="post-toc-number">3.</span> <span class="post-toc-text">解决方案</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#参考"><span class="post-toc-number">4.</span> <span class="post-toc-text">参考</span></a></li></ol>
+        </nav>
+    </aside>
+
+
+<article id="post-记录一次增量数据一致性问题"
+  class="post-article article-type-post fade" itemprop="blogPost">
+
+    <div class="post-card">
+        <h1 class="post-card-title">记录一次增量数据一致性问题</h1>
+        <div class="post-meta">
+            <time class="post-time" title="2023-11-19 10:11:45" datetime="2023-11-19T02:11:45.000Z"  itemprop="datePublished">2023-11-19</time>
+
+            
+
+
+            
+<span id="busuanzi_container_page_pv" title="文章总阅读量" style='display:none'>
+    <i class="icon icon-eye icon-pr"></i><span id="busuanzi_value_page_pv"></span>
+</span>
+
+
+        </div>
+        <div class="post-content" id="post-content" itemprop="postContent">
+            <blockquote>
+<p>最近收到客户投诉出现数据无法操作的问题，经过排查，Mysql 和 ES 数据出现一致性问题。我们的使用场景是定于 Mysql binlog 投递到 Kafka，增量服务顺序消费 Kafka 中的消息，更新 ES 中的文档。</p>
+</blockquote>
+<h3 id="索引结构"><a href="#索引结构" class="headerlink" title="索引结构"></a>索引结构</h3><p>在分析问题前先简单看下索引结构，这里只看出现问题的字段，主要就是用于存储标签 id 的一个 long 类型的字段，存的是一个数组。</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">"mappings"</span> : &#123;</span><br><span class="line">    <span class="attr">"f_tag_id"</span> : &#123;</span><br><span class="line">      <span class="attr">"type"</span> : <span class="string">"long"</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">"f_status"</span> : &#123;</span><br><span class="line">      <span class="attr">"type"</span> : <span class="string">"byte"</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="问题分析"><a href="#问题分析" class="headerlink" title="问题分析"></a>问题分析</h3><ul>
+<li>先简单看一下标签增量的逻辑，由于标签存的是一个数组，所以在更新的时候是先把文档查询出来，再对相应的数组字段做元素的新增或者删除，然后再重新索引到 ES 中。</li>
+<li>生产中的场景是同时有两个 binlog 并发，但是是分两次消费（同一批次的消息我们这边会在内存进行组装），A 表的 binlog 先更新 f_status，B 表 (标签关联表) 的 binlog 先将文档查询出来，更新完之后再将整个文档索引回 ES（更新代码通用性，所以是更新整个文档）。</li>
+<li>由于 ES 索引更新刷盘并非实时的，导致 B 表查询出来的文档是旧的，所以 B 表在更新索引时将旧的数据覆盖了新的数据。</li>
+<li>举一个简单的例子：<ul>
+<li>假设原本 f_status = 0, f_tag_id = []</li>
+<li>A 表更新 f_status =1，此时 f_status = 1, f_tag_id = []</li>
+<li>B 表更新 f_tag_id = [1]，由于 ES 刷盘存在延迟，导致更新的数据为 f_status = 0, f_tag_id = [1]</li>
+</ul>
+</li>
+</ul>
+<h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><ul>
+<li><p>最初的想法是只更新 f_tag_id 字段，但是这样其实还是会有问题，举个例子 B 表 (标签关联表) 针对同一条记录两个标签关联数据，意味着会有两个 binlog 生成，假设很不巧，Kafka 消费者分了两个批次去更新索引，就会造成和上述类似的场景。</p>
+<ul>
+<li>假设原本 f_tag_id = [1,2]</li>
+<li>第一条 binlog 更新 f_tag_id = [1,2,3]</li>
+<li>第二条 binlog 消费时，先查询 f_tag_id = [1,2]，此时在去更新 f_tag_id 就会变成 [1,2,4]，还是会出现数据不一致问题</li>
+</ul>
+</li>
+<li><p>第一个方案行不通，那能不能让 f_tag_id 像更新其他字段一样，不需要先查询出来组装再重新索引回 ES，答案是可以，那就是利用 ES 脚本更新，因为更新操作是可以直接更新内存的数据，所以数据是实时的。</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">"script"</span>: &#123;</span><br><span class="line">    <span class="attr">"source"</span>: <span class="string">""</span><span class="string">"</span></span><br><span class="line"><span class="string">      List tagIdList = ctx._source.f_tag_id == null </span></span><br><span class="line"><span class="string">          ? new ArrayList() </span></span><br><span class="line"><span class="string">          : ctx._source.f_tag_id;</span></span><br><span class="line"><span class="string">      if("</span>insert<span class="string">".equals(params.method) </span></span><br><span class="line"><span class="string">        &amp;&amp; !tagIdList.contains(params.changeTagId))&#123;</span></span><br><span class="line"><span class="string">        tagIdList.add(params.changeTagId);</span></span><br><span class="line"><span class="string">      &#125; else if("</span>delete<span class="string">".equals(params.method)</span></span><br><span class="line"><span class="string">        &amp;&amp; tagIdList.contains(params.changeTagId))&#123;</span></span><br><span class="line"><span class="string">         tagIdList.remove(tagIdList.indexOf(params.changeTagId));</span></span><br><span class="line"><span class="string">      &#125;</span></span><br><span class="line"><span class="string">      ctx._source.f_tag_id = tagIdList;</span></span><br><span class="line"><span class="string">    "</span><span class="string">""</span>,</span><br><span class="line">    <span class="attr">"lang"</span>: <span class="string">"painless"</span>,</span><br><span class="line">    <span class="attr">"params"</span>: &#123;</span><br><span class="line">      <span class="attr">"changeTagId"</span>: <span class="number">12</span>,</span><br><span class="line">      <span class="attr">"method"</span>: <span class="string">"insert"</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="attr">"upsert"</span>: &#123;</span><br><span class="line">    <span class="attr">"f_tag_id"</span>: [<span class="number">12</span>]</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p>大概思路就是利用脚本直接针对 f_tag_id 进行元素变更，这样就不用担心查出来的 f_tad_id 是旧的了。</p>
+<h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><p><a href="https://www.elastic.co/guide/en/elasticsearch/reference/7.14/docs-update.html" target="_blank" rel="noopener">https://www.elastic.co/guide/en/elasticsearch/reference/7.14/docs-update.html</a><br><a href="https://www.elastic.co/guide/en/elasticsearch/painless/7.14/painless-types.html" target="_blank" rel="noopener">https://www.elastic.co/guide/en/elasticsearch/painless/7.14/painless-types.html</a></p>
+</li>
+</ul>
+
+        </div>
+
+        <blockquote class="post-copyright">
+    
+    <div class="content">
+        
+<span class="post-time">
+    最后更新时间：<time datetime="2023-11-19T15:11:48.859Z" itemprop="dateUpdated">2023-11-19 23:11:48</time>
+</span><br>
+
+
+        
+    </div>
+    
+    <footer>
+        <a href="http://example.com">
+            <img src="/img/avatar.jpg" alt="Jerry Chan">
+            Jerry Chan
+        </a>
+    </footer>
+</blockquote>
+
+        
+
+
+        <div class="post-footer">
+            
+	<ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ES/" rel="tag">ES</a></li></ul>
+
+
+            
+<div class="page-share-wrap">
+    
+
+<div class="page-share" id="pageShare">
+    <ul class="reset share-icons">
+      <li>
+        <a class="weibo share-sns" target="_blank" href="http://service.weibo.com/share/share.php?url=http://example.com/2023/11/19/%E8%AE%B0%E5%BD%95%E4%B8%80%E6%AC%A1%E5%A2%9E%E9%87%8F%E6%95%B0%E6%8D%AE%E4%B8%80%E8%87%B4%E6%80%A7%E9%97%AE%E9%A2%98/&title=《记录一次增量数据一致性问题》 — Jerry Chan&pic=http://example.com/img/avatar.jpg" data-title="微博">
+          <i class="icon icon-weibo"></i>
+        </a>
+      </li>
+      <li>
+        <a class="weixin share-sns wxFab" href="javascript:;" data-title="微信">
+          <i class="icon icon-weixin"></i>
+        </a>
+      </li>
+      <li>
+        <a class="qq share-sns" target="_blank" href="http://connect.qq.com/widget/shareqq/index.html?url=http://example.com/2023/11/19/%E8%AE%B0%E5%BD%95%E4%B8%80%E6%AC%A1%E5%A2%9E%E9%87%8F%E6%95%B0%E6%8D%AE%E4%B8%80%E8%87%B4%E6%80%A7%E9%97%AE%E9%A2%98/&title=《记录一次增量数据一致性问题》 — Jerry Chan&source=" data-title=" QQ">
+          <i class="icon icon-qq"></i>
+        </a>
+      </li>
+      <li>
+        <a class="facebook share-sns" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http://example.com/2023/11/19/%E8%AE%B0%E5%BD%95%E4%B8%80%E6%AC%A1%E5%A2%9E%E9%87%8F%E6%95%B0%E6%8D%AE%E4%B8%80%E8%87%B4%E6%80%A7%E9%97%AE%E9%A2%98/" data-title=" Facebook">
+          <i class="icon icon-facebook"></i>
+        </a>
+      </li>
+      <li>
+        <a class="twitter share-sns" target="_blank" href="https://twitter.com/intent/tweet?text=《记录一次增量数据一致性问题》 — Jerry Chan&url=http://example.com/2023/11/19/%E8%AE%B0%E5%BD%95%E4%B8%80%E6%AC%A1%E5%A2%9E%E9%87%8F%E6%95%B0%E6%8D%AE%E4%B8%80%E8%87%B4%E6%80%A7%E9%97%AE%E9%A2%98/&via=http://example.com" data-title=" Twitter">
+          <i class="icon icon-twitter"></i>
+        </a>
+      </li>
+      <li>
+        <a class="google share-sns" target="_blank" href="https://plus.google.com/share?url=http://example.com/2023/11/19/%E8%AE%B0%E5%BD%95%E4%B8%80%E6%AC%A1%E5%A2%9E%E9%87%8F%E6%95%B0%E6%8D%AE%E4%B8%80%E8%87%B4%E6%80%A7%E9%97%AE%E9%A2%98/" data-title=" Google+">
+          <i class="icon icon-google-plus"></i>
+        </a>
+      </li>
+    </ul>
+ </div>
+
+
+
+    <a href="javascript:;" id="shareFab" class="page-share-fab waves-effect waves-circle">
+        <i class="icon icon-share-alt icon-lg"></i>
+    </a>
+</div>
+
+
+
+        </div>
+    </div>
+
+    
+<nav class="post-nav flex-row flex-justify-between flex-row-reverse">
+  
+
+  
+    <div class="waves-block waves-effect next">
+      <a href="/2023/07/25/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E4%B9%8B-2PC-%E7%9A%84-XA-%E8%A7%84%E8%8C%83%E5%AE%9E%E7%8E%B0/" id="post-next" class="post-nav-link">
+        <div class="tips">Next <i class="icon icon-angle-right icon-lg icon-pl"></i></div>
+        <h4 class="title">分布式事务之 2PC 的 XA 规范实现</h4>
+      </a>
+    </div>
+  
+</nav>
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</article>
+
+
+
+</div>
+
+        <footer class="footer">
+    <div class="top">
+        
+<p>
+    <span id="busuanzi_container_site_uv" style='display:none'>
+        站点总访客数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span id="busuanzi_container_site_pv" style='display:none'>
+        站点总访问量：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</p>
+
+
+        <p>
+            
+                <span><a href="/atom.xml" target="_blank" class="rss" title="rss"><i class="icon icon-lg icon-rss"></i></a></span>
+            
+            <span>博客内容遵循 <a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" target="_blank">知识共享 署名 - 非商业性 - 相同方式共享 4.0 国际协议</a></span>
+        </p>
+    </div>
+    <div class="bottom">
+        <p><span>Jerry Chan &copy; 2023</span>
+            <span>
+                
+                Power by <a href="http://hexo.io/" target="_blank">Hexo</a> Theme <a href="https://github.com/yscoder/hexo-theme-indigo" target="_blank">indigo</a>
+            </span>
+        </p>
+    </div>
+</footer>
+
+    </main>
+    <div class="mask" id="mask"></div>
+<a href="javascript:;" id="gotop" class="waves-effect waves-circle waves-light"><span class="icon icon-lg icon-chevron-up"></span></a>
+
+
+
+<div class="global-share" id="globalShare">
+    <ul class="reset share-icons">
+      <li>
+        <a class="weibo share-sns" target="_blank" href="http://service.weibo.com/share/share.php?url=http://example.com/2023/11/19/%E8%AE%B0%E5%BD%95%E4%B8%80%E6%AC%A1%E5%A2%9E%E9%87%8F%E6%95%B0%E6%8D%AE%E4%B8%80%E8%87%B4%E6%80%A7%E9%97%AE%E9%A2%98/&title=《记录一次增量数据一致性问题》 — Jerry Chan&pic=http://example.com/img/avatar.jpg" data-title="微博">
+          <i class="icon icon-weibo"></i>
+        </a>
+      </li>
+      <li>
+        <a class="weixin share-sns wxFab" href="javascript:;" data-title="微信">
+          <i class="icon icon-weixin"></i>
+        </a>
+      </li>
+      <li>
+        <a class="qq share-sns" target="_blank" href="http://connect.qq.com/widget/shareqq/index.html?url=http://example.com/2023/11/19/%E8%AE%B0%E5%BD%95%E4%B8%80%E6%AC%A1%E5%A2%9E%E9%87%8F%E6%95%B0%E6%8D%AE%E4%B8%80%E8%87%B4%E6%80%A7%E9%97%AE%E9%A2%98/&title=《记录一次增量数据一致性问题》 — Jerry Chan&source=" data-title=" QQ">
+          <i class="icon icon-qq"></i>
+        </a>
+      </li>
+      <li>
+        <a class="facebook share-sns" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http://example.com/2023/11/19/%E8%AE%B0%E5%BD%95%E4%B8%80%E6%AC%A1%E5%A2%9E%E9%87%8F%E6%95%B0%E6%8D%AE%E4%B8%80%E8%87%B4%E6%80%A7%E9%97%AE%E9%A2%98/" data-title=" Facebook">
+          <i class="icon icon-facebook"></i>
+        </a>
+      </li>
+      <li>
+        <a class="twitter share-sns" target="_blank" href="https://twitter.com/intent/tweet?text=《记录一次增量数据一致性问题》 — Jerry Chan&url=http://example.com/2023/11/19/%E8%AE%B0%E5%BD%95%E4%B8%80%E6%AC%A1%E5%A2%9E%E9%87%8F%E6%95%B0%E6%8D%AE%E4%B8%80%E8%87%B4%E6%80%A7%E9%97%AE%E9%A2%98/&via=http://example.com" data-title=" Twitter">
+          <i class="icon icon-twitter"></i>
+        </a>
+      </li>
+      <li>
+        <a class="google share-sns" target="_blank" href="https://plus.google.com/share?url=http://example.com/2023/11/19/%E8%AE%B0%E5%BD%95%E4%B8%80%E6%AC%A1%E5%A2%9E%E9%87%8F%E6%95%B0%E6%8D%AE%E4%B8%80%E8%87%B4%E6%80%A7%E9%97%AE%E9%A2%98/" data-title=" Google+">
+          <i class="icon icon-google-plus"></i>
+        </a>
+      </li>
+    </ul>
+ </div>
+
+
+<div class="page-modal wx-share" id="wxShare">
+    <a class="close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASYAAAEmCAAAAADqr2IGAAAEkElEQVR42u3ay3LiQAwF0Pz/T2e2k0oMV1KTIDheUYxj3KenSq/++Iivz2/X/99/v+fqm9vfn72Sd/6Dn8SECRMmTL/O9Hnzunp0Fe7qCQlx7/srjuSvfvhbTJgwYcK0nKn3uKs7by8+ibm3n5zfn2zP7bVjwoQJE6Z3Y5pQzu9JmJLnY8KECRMmTJMw3yunky7rqd4sJkyYMGF6N6ZqKM2f0EsF8u+TQemBFAQTJkyYMK1lqgbjV/r8kLNCmDBhwoTpaZjmgbxXsj7iGFDvMFC0UkyYMGHCtJapGkSTxm516FhNRBLKScP38mmYMGHChGkh0ySsVheTJwSTtu+kaL/TBceECRMmTAuZkpCZLywPvdUydT6qzN88agRjwoQJE6a1TL1iMgntk8WfahxXgaL/U5gwYcKEaSHT5ATLZLg4L1wn21ltQGPChAkTpr1MvQZrdan5O+SpRm8to9IXEyZMmDA9MdPc+DZitSHbA8pThyQVaO4YJkyYMGF6Yqb5QDF/3WpzdlLEVlvPl58xYcKECdNapuqxlV5btlpI529SLbPzX4xavZgwYcKEaQlTtZFafZVqSTwZnfaK8+hwDyZMmDBhWsiUh+fqAZrqsZ78kFAviRklE5gwYcKEaTlT3tidNGrzQeYjlp2nDj+8JyZMmDBhWss0X0Chwo4HnL3hZd667aFjwoQJE6bXYzpbHleHmsnmTVq3eRKDCRMmTJi2M1WvPITnyUH+u6dSgYdfmDBhwoTpCZiqA8W8XEywqqnGPJmo/tWXXjgmTJgwYVrIVF1GMnScF6KPyHEmA1RMmDBhwrSXqXpkp9oenTRqc/T5nXeqXUyYMGHC9KJMeQKRH4v5nebyPMnAhAkTJkyvxJQEzrwF3Bs95kE635IkOYg2AxMmTJgwrWWKxnjFtmmeXkwK5vxz9U0u78eECRMmTAuZEqBJqI5aqMUQ3nuHXjsbEyZMmDC9A1PeSK0mBL1DNtUWc77BzQ4BJkyYMGF6YqZ8bDkPsdUn9ErZ6pGg/DMmTJgwYdrIVH1o9aBPXsr2iuRqMtHcAEyYMGHCtJxpXr7OC+bP4Mo3MtngQpGMCRMmTJiWMyW35j+ck1XbqZ/xVR3W3nk3TJgwYcK0lqkajCelaW9IWd2Y3lAzSh0wYcKECdNCphzl1GGanCZfTPU9E5ov32PChAkTprVM+SGbyeLzovdUM7e38XeSBkyYMGHCtJCp1+SdLCMJ7fmBm2rztzmgxYQJEyZML8FUJegd3ymUmq1DQtX2bqFDgAkTJkyYFjL12q95q7R8OKY1Lq0W1Qe2ARMmTJgwLWGalIvVBc8L5slm9Eawd6a+mDBhwoTp6Znyaz5c7AX1alKSF7dNCEyYMGHCtJApSQImEPPhaK/13NvCy3/FhAkTJkzLmfKAfTZ6zpu8xzrct+/EhAkTJkxvwFRt++YFahW62vw9sEZMmDBhwvQGTEmDNSk182VXDwxNhqB3nowJEyZMmJYzVYNuPjg8u9ReA/rAxmDChAkTprVMp5qkyYCzN4CcN3l7ic7o0ZgwYcKE6e+Z/gFdad4/Sla6wQAAAABJRU5ErkJggg==" alt="微信分享二维码">
+</div>
+
+
+
+
+    <script src="//cdn.bootcss.com/node-waves/0.7.4/waves.min.js"></script>
+<script>
+var BLOG = { ROOT: '/', SHARE: true, REWARD: false };
+
+
+</script>
+
+<script src="//unpkg.com/hexo-theme-material-indigo@latest/js/main.min.js"></script>
+
+
+<div class="search-panel" id="search-panel">
+    <ul class="search-result" id="search-result"></ul>
+</div>
+<template id="search-tpl">
+<li class="item">
+    <a href="{path}" class="waves-block waves-effect">
+        <div class="title ellipsis" title="{title}">{title}</div>
+        <div class="flex-row flex-middle">
+            <div class="tags ellipsis">
+                {tags}
+            </div>
+            <time class="flex-col time">{date}</time>
+        </div>
+    </a>
+</li>
+</template>
+
+<script src="//unpkg.com/hexo-theme-material-indigo@latest/js/search.min.js" async></script>
+
+
+
+
+
+
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+<script>
+(function() {
+    var OriginTitile = document.title, titleTime;
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            document.title = '大爷别走呀！';
+            clearTimeout(titleTime);
+        } else {
+            document.title = '来啦，老弟!';
+            titleTime = setTimeout(function() {
+                document.title = OriginTitile;
+            },2000);
+        }
+    });
+})();
+</script>
+
+
+
+</body>
+</html>

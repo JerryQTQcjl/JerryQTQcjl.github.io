@@ -6,7 +6,7 @@
   <link href="http://example.com/atom.xml" rel="self"/>
   
   <link href="http://example.com/"/>
-  <updated>2023-07-25T02:16:46.841Z</updated>
+  <updated>2023-11-19T15:11:48.859Z</updated>
   <id>http://example.com/</id>
   
   <author>
@@ -15,6 +15,30 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>记录一次增量数据一致性问题</title>
+    <link href="http://example.com/2023/11/19/%E8%AE%B0%E5%BD%95%E4%B8%80%E6%AC%A1%E5%A2%9E%E9%87%8F%E6%95%B0%E6%8D%AE%E4%B8%80%E8%87%B4%E6%80%A7%E9%97%AE%E9%A2%98/"/>
+    <id>http://example.com/2023/11/19/%E8%AE%B0%E5%BD%95%E4%B8%80%E6%AC%A1%E5%A2%9E%E9%87%8F%E6%95%B0%E6%8D%AE%E4%B8%80%E8%87%B4%E6%80%A7%E9%97%AE%E9%A2%98/</id>
+    <published>2023-11-19T02:11:45.000Z</published>
+    <updated>2023-11-19T15:11:48.859Z</updated>
+    
+    <content type="html"><![CDATA[<blockquote><p>最近收到客户投诉出现数据无法操作的问题，经过排查，Mysql 和 ES 数据出现一致性问题。我们的使用场景是定于 Mysql binlog 投递到 Kafka，增量服务顺序消费 Kafka 中的消息，更新 ES 中的文档。</p></blockquote><h3 id="索引结构"><a href="#索引结构" class="headerlink" title="索引结构"></a>索引结构</h3><p>在分析问题前先简单看下索引结构，这里只看出现问题的字段，主要就是用于存储标签 id 的一个 long 类型的字段，存的是一个数组。</p><figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">"mappings"</span> : &#123;</span><br><span class="line">    <span class="attr">"f_tag_id"</span> : &#123;</span><br><span class="line">      <span class="attr">"type"</span> : <span class="string">"long"</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">"f_status"</span> : &#123;</span><br><span class="line">      <span class="attr">"type"</span> : <span class="string">"byte"</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><h3 id="问题分析"><a href="#问题分析" class="headerlink" title="问题分析"></a>问题分析</h3><ul><li>先简单看一下标签增量的逻辑，由于标签存的是一个数组，所以在更新的时候是先把文档查询出来，再对相应的数组字段做元素的新增或者删除，然后再重新索引到 ES 中。</li><li>生产中的场景是同时有两个 binlog 并发，但是是分两次消费（同一批次的消息我们这边会在内存进行组装），A 表的 binlog 先更新 f_status，B 表 (标签关联表) 的 binlog 先将文档查询出来，更新完之后再将整个文档索引回 ES（更新代码通用性，所以是更新整个文档）。</li><li>由于 ES 索引更新刷盘并非实时的，导致 B 表查询出来的文档是旧的，所以 B 表在更新索引时将旧的数据覆盖了新的数据。</li><li>举一个简单的例子：<ul><li>假设原本 f_status = 0, f_tag_id = []</li><li>A 表更新 f_status =1，此时 f_status = 1, f_tag_id = []</li><li>B 表更新 f_tag_id = [1]，由于 ES 刷盘存在延迟，导致更新的数据为 f_status = 0, f_tag_id = [1]</li></ul></li></ul><h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><ul><li><p>最初的想法是只更新 f_tag_id 字段，但是这样其实还是会有问题，举个例子 B 表 (标签关联表) 针对同一条记录两个标签关联数据，意味着会有两个 binlog 生成，假设很不巧，Kafka 消费者分了两个批次去更新索引，就会造成和上述类似的场景。</p><ul><li>假设原本 f_tag_id = [1,2]</li><li>第一条 binlog 更新 f_tag_id = [1,2,3]</li><li>第二条 binlog 消费时，先查询 f_tag_id = [1,2]，此时在去更新 f_tag_id 就会变成 [1,2,4]，还是会出现数据不一致问题</li></ul></li><li><p>第一个方案行不通，那能不能让 f_tag_id 像更新其他字段一样，不需要先查询出来组装再重新索引回 ES，答案是可以，那就是利用 ES 脚本更新，因为更新操作是可以直接更新内存的数据，所以数据是实时的。</p><figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">"script"</span>: &#123;</span><br><span class="line">    <span class="attr">"source"</span>: <span class="string">""</span><span class="string">"</span></span><br><span class="line"><span class="string">      List tagIdList = ctx._source.f_tag_id == null </span></span><br><span class="line"><span class="string">          ? new ArrayList() </span></span><br><span class="line"><span class="string">          : ctx._source.f_tag_id;</span></span><br><span class="line"><span class="string">      if("</span>insert<span class="string">".equals(params.method) </span></span><br><span class="line"><span class="string">        &amp;&amp; !tagIdList.contains(params.changeTagId))&#123;</span></span><br><span class="line"><span class="string">        tagIdList.add(params.changeTagId);</span></span><br><span class="line"><span class="string">      &#125; else if("</span>delete<span class="string">".equals(params.method)</span></span><br><span class="line"><span class="string">        &amp;&amp; tagIdList.contains(params.changeTagId))&#123;</span></span><br><span class="line"><span class="string">         tagIdList.remove(tagIdList.indexOf(params.changeTagId));</span></span><br><span class="line"><span class="string">      &#125;</span></span><br><span class="line"><span class="string">      ctx._source.f_tag_id = tagIdList;</span></span><br><span class="line"><span class="string">    "</span><span class="string">""</span>,</span><br><span class="line">    <span class="attr">"lang"</span>: <span class="string">"painless"</span>,</span><br><span class="line">    <span class="attr">"params"</span>: &#123;</span><br><span class="line">      <span class="attr">"changeTagId"</span>: <span class="number">12</span>,</span><br><span class="line">      <span class="attr">"method"</span>: <span class="string">"insert"</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="attr">"upsert"</span>: &#123;</span><br><span class="line">    <span class="attr">"f_tag_id"</span>: [<span class="number">12</span>]</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li><li><p>大概思路就是利用脚本直接针对 f_tag_id 进行元素变更，这样就不用担心查出来的 f_tad_id 是旧的了。</p><h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><p><a href="https://www.elastic.co/guide/en/elasticsearch/reference/7.14/docs-update.html" target="_blank" rel="noopener">https://www.elastic.co/guide/en/elasticsearch/reference/7.14/docs-update.html</a><br><a href="https://www.elastic.co/guide/en/elasticsearch/painless/7.14/painless-types.html" target="_blank" rel="noopener">https://www.elastic.co/guide/en/elasticsearch/painless/7.14/painless-types.html</a></p></li></ul>]]></content>
+    
+    
+      
+      
+    <summary type="html">&lt;blockquote&gt;
+&lt;p&gt;最近收到客户投诉出现数据无法操作的问题，经过排查，Mysql 和 ES 数据出现一致性问题。我们的使用场景是定于 Mysql binlog 投递到 Kafka，增量服务顺序消费 Kafka 中的消息，更新 ES 中的文档。&lt;/p&gt;
+&lt;/blockq</summary>
+      
+    
+    
+    
+    
+    <category term="ES" scheme="http://example.com/tags/ES/"/>
+    
+  </entry>
   
   <entry>
     <title>分布式事务之 2PC 的 XA 规范实现</title>
