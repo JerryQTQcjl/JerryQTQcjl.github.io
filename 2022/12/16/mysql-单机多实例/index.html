@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+
+    
+
+    
+
+
+
+    <meta charset="utf-8">
+    
+    
+    
+    
+    <title>mysql 单机多实例 | Jerry Chan</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    
+    <meta name="theme-color" content="#3F51B5">
+    
+    
+    <meta name="keywords" content="mysql">
+    <meta name="description" content="为每个实例创建单独的配置文件及数据目录    my.cnf 配置文件如下 123456789[mysql]socket &#x3D; &#x2F;usr&#x2F;local&#x2F;mysql&#x2F;instance&#x2F;3306&#x2F;data&#x2F;mysql.sock[mysqld]basedir &#x3D; &#x2F;usr&#x2F;local&#x2F;mysqldatadir &#x3D; &#x2F;usr&#x2F;local&#x2F;mysql&#x2F;instance&#x2F;3306&#x2F;dataport &#x3D; 3306s">
+<meta property="og:type" content="article">
+<meta property="og:title" content="mysql 单机多实例">
+<meta property="og:url" content="http://example.com/2022/12/16/mysql-%E5%8D%95%E6%9C%BA%E5%A4%9A%E5%AE%9E%E4%BE%8B/index.html">
+<meta property="og:site_name" content="Jerry Chan">
+<meta property="og:description" content="为每个实例创建单独的配置文件及数据目录    my.cnf 配置文件如下 123456789[mysql]socket &#x3D; &#x2F;usr&#x2F;local&#x2F;mysql&#x2F;instance&#x2F;3306&#x2F;data&#x2F;mysql.sock[mysqld]basedir &#x3D; &#x2F;usr&#x2F;local&#x2F;mysqldatadir &#x3D; &#x2F;usr&#x2F;local&#x2F;mysql&#x2F;instance&#x2F;3306&#x2F;dataport &#x3D; 3306s">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/images/1719480537871.jpg">
+<meta property="og:image" content="http://example.com/images/1719480578049.jpg">
+<meta property="article:published_time" content="2022-12-16T09:26:58.000Z">
+<meta property="article:modified_time" content="2024-06-27T09:41:04.715Z">
+<meta property="article:author" content="Jerry Chan">
+<meta property="article:tag" content="mysql">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/1719480537871.jpg">
+    
+        <link rel="alternate" type="application/atom+xml" title="Jerry Chan" href="/atom.xml">
+    
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="stylesheet" href="//unpkg.com/hexo-theme-material-indigo@latest/css/style.css">
+    <script>window.lazyScripts=[]</script>
+
+    <!-- custom head -->
+    
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body>
+    <div id="loading" class="active"></div>
+
+    <aside id="menu" class="hide" >
+  <div class="inner flex-row-vertical">
+    <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="menu-off">
+        <i class="icon icon-lg icon-close"></i>
+    </a>
+    <div class="brand-wrap" style="background-image:url(/img/brand.jpg)">
+      <div class="brand">
+        <a href="/" class="avatar waves-effect waves-circle waves-light">
+          <img src="/img/avatar.jpg">
+        </a>
+        <hgroup class="introduce">
+          <h5 class="nickname">Jerry Chan</h5>
+          <a href="mailto:jerrtqtqcjl@gmail.com" title="jerrtqtqcjl@gmail.com" class="mail">jerrtqtqcjl@gmail.com</a>
+        </hgroup>
+      </div>
+    </div>
+    <div class="scroll-wrap flex-col">
+      <ul class="nav">
+        
+            <li class="waves-block waves-effect">
+              <a href="/"  >
+                <i class="icon icon-lg icon-home"></i>
+                主页
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/archives"  >
+                <i class="icon icon-lg icon-archives"></i>
+                归档
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/tags"  >
+                <i class="icon icon-lg icon-tags"></i>
+                标签
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/categories"  >
+                <i class="icon icon-lg icon-th-list"></i>
+                目录
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="https://github.com/JerryQTQcjl" target="_blank" >
+                <i class="icon icon-lg icon-github"></i>
+                Github
+              </a>
+            </li>
+        
+      </ul>
+    </div>
+  </div>
+</aside>
+
+    <main id="main">
+        <header class="top-header" id="header">
+    <div class="flex-row">
+        <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light on" id="menu-toggle">
+          <i class="icon icon-lg icon-navicon"></i>
+        </a>
+        <div class="flex-col header-title ellipsis">mysql 单机多实例</div>
+        
+        <div class="search-wrap" id="search-wrap">
+            <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="back">
+                <i class="icon icon-lg icon-chevron-left"></i>
+            </a>
+            <input type="text" id="key" class="search-input" autocomplete="off" placeholder="输入感兴趣的关键字">
+            <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="search">
+                <i class="icon icon-lg icon-search"></i>
+            </a>
+        </div>
+        
+        
+        <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="menuShare">
+            <i class="icon icon-lg icon-share-alt"></i>
+        </a>
+        
+    </div>
+</header>
+<header class="content-header post-header">
+
+    <div class="container fade-scale">
+        <h1 class="title">mysql 单机多实例</h1>
+        <h5 class="subtitle">
+            
+                <time datetime="2022-12-16T09:26:58.000Z" itemprop="datePublished" class="page-time">
+  2022-12-16
+</time>
+
+
+            
+        </h5>
+    </div>
+
+    
+
+
+</header>
+
+
+<div class="container body-wrap">
+    
+
+<article id="post-mysql-单机多实例"
+  class="post-article article-type-post fade" itemprop="blogPost">
+
+    <div class="post-card">
+        <h1 class="post-card-title">mysql 单机多实例</h1>
+        <div class="post-meta">
+            <time class="post-time" title="2022-12-16 17:26:58" datetime="2022-12-16T09:26:58.000Z"  itemprop="datePublished">2022-12-16</time>
+
+            
+
+
+            
+<span id="busuanzi_container_page_pv" title="文章总阅读量" style='display:none'>
+    <i class="icon icon-eye icon-pr"></i><span id="busuanzi_value_page_pv"></span>
+</span>
+
+
+        </div>
+        <div class="post-content" id="post-content" itemprop="postContent">
+            <ol>
+<li><p>为每个实例创建单独的配置文件及数据目录</p>
+<p><img src="/images/1719480537871.jpg" alt="截图"></p>
+<p><img src="/images/1719480578049.jpg" alt="截图"></p>
+</li>
+<li><p>my.cnf 配置文件如下</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[mysql]</span><br><span class="line">socket = /usr/<span class="built_in">local</span>/mysql/instance/3306/data/mysql.sock</span><br><span class="line">[mysqld]</span><br><span class="line">basedir = /usr/<span class="built_in">local</span>/mysql</span><br><span class="line">datadir = /usr/<span class="built_in">local</span>/mysql/instance/3306/data</span><br><span class="line">port = 3306</span><br><span class="line">socket = /usr/<span class="built_in">local</span>/mysql/instance/3306/data/mysql.sock</span><br><span class="line">log_error = /usr/<span class="built_in">local</span>/mysql/instance/3306/data/mysql-error</span><br><span class="line">pid_file = /usr/<span class="built_in">local</span>/mysql/instance/3306/data/mysql.pid</span><br></pre></td></tr></table></figure></li>
+<li><p>初始化 data 目录</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">mysqld --initialize --basedir=/usr/<span class="built_in">local</span>/mysql --datadir=/usr/<span class="built_in">local</span>/mysql/instance/3308/data</span><br><span class="line"></span><br><span class="line">2022-12-14T15:14:26.003364Z 0 [Warning] TIMESTAMP with implicit DEFAULT value is deprecated. Please use --explicit_defaults_for_timestamp server option (see documentation <span class="keyword">for</span> more details).</span><br><span class="line">2022-12-14T15:14:26.005452Z 0 [Warning] Setting lower_case_table_names=2 because file system <span class="keyword">for</span> /usr/<span class="built_in">local</span>/mysql/instance/3308/data/ is <span class="keyword">case</span> insensitive</span><br><span class="line">2022-12-14T15:14:26.129712Z 0 [Warning] InnoDB: New <span class="built_in">log</span> files created, LSN=45790</span><br><span class="line">2022-12-14T15:14:26.151110Z 0 [Warning] InnoDB: Creating foreign key constraint system tables.</span><br><span class="line">2022-12-14T15:14:26.218698Z 0 [Warning] No existing UUID has been found, so we assume that this is the first time that this server has been started. Generating a new UUID: ff66d330-7bc1-11ed-9e9b-119ad045e8ba.</span><br><span class="line">2022-12-14T15:14:26.249279Z 0 [Warning] Gtid table is not ready to be used. Table <span class="string">'mysql.gtid_executed'</span> cannot be opened.</span><br><span class="line">2022-12-14T15:14:26.884182Z 0 [Warning] CA certificate ca.pem is self signed.</span><br><span class="line">2022-12-14T15:14:26.977637Z 1 [Note] A temporary password is generated <span class="keyword">for</span> root@localhost: phbSZ0nOis=e</span><br></pre></td></tr></table></figure></li>
+<li><p>启动 mysql 服务端</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysqld --defaults-file=/usr/<span class="built_in">local</span>/mysql/instance/3308/my.cnf &amp;</span><br></pre></td></tr></table></figure></li>
+<li><p>mysql 客户端中更改用户密码，初始密码在初始化时能获取（忘记了可以在网上搜搜跳过认证流程）</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql -u root -p -S /usr/<span class="built_in">local</span>/mysql/instance/3308/data/mysql.sock</span><br></pre></td></tr></table></figure></li>
+<li><p>将启动命令存到</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">alias</span> mysqld3306=<span class="string">"mysqld --defaults-file=/usr/local/mysql/instance/3306/my.cnf &amp;"</span></span><br><span class="line"><span class="built_in">alias</span> mysqld3307=<span class="string">"mysqld --defaults-file=/usr/local/mysql/instance/3307/my.cnf &amp;"</span></span><br><span class="line"><span class="built_in">alias</span> mysqld3308=<span class="string">"mysqld --defaults-file=/usr/local/mysql/instance/3308/my.cnf &amp;"</span></span><br><span class="line"><span class="built_in">alias</span> mysql3306=<span class="string">"mysql -u root -p -S /usr/local/mysql/instance/3306/data/mysql.sock"</span></span><br><span class="line"><span class="built_in">alias</span> mysql3307=<span class="string">"mysql -u root -p -S /usr/local/mysql/instance/3307/data/mysql.sock"</span></span><br><span class="line"><span class="built_in">alias</span> mysql3308=<span class="string">"mysql -u root -p -S /usr/local/mysql/instance/3308/data/mysql.sock"</span></span><br><span class="line"><span class="built_in">alias</span> mysqlkill3306=<span class="string">"mysqladmin -uroot -p -S /usr/local/mysql/instance/3306/data/mysql.sock shutdown"</span></span><br><span class="line"><span class="built_in">alias</span> mysqlkill3307=<span class="string">"mysqladmin -uroot -p -S /usr/local/mysql/instance/3307/data/mysql.sock shutdown"</span></span><br><span class="line"><span class="built_in">alias</span> mysqlkill3308=<span class="string">"mysqladmin -uroot -p -S /usr/local/mysql/instance/3308/data/mysql.sock shutdown"</span></span><br></pre></td></tr></table></figure></li>
+</ol>
+
+        </div>
+
+        <blockquote class="post-copyright">
+    
+    <div class="content">
+        
+<span class="post-time">
+    最后更新时间：<time datetime="2024-06-27T09:41:04.715Z" itemprop="dateUpdated">2024-06-27 17:41:04</time>
+</span><br>
+
+
+        
+    </div>
+    
+    <footer>
+        <a href="http://example.com">
+            <img src="/img/avatar.jpg" alt="Jerry Chan">
+            Jerry Chan
+        </a>
+    </footer>
+</blockquote>
+
+        
+
+
+        <div class="post-footer">
+            
+	<ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/mysql/" rel="tag">mysql</a></li></ul>
+
+
+            
+<div class="page-share-wrap">
+    
+
+<div class="page-share" id="pageShare">
+    <ul class="reset share-icons">
+      <li>
+        <a class="weibo share-sns" target="_blank" href="http://service.weibo.com/share/share.php?url=http://example.com/2022/12/16/mysql-%E5%8D%95%E6%9C%BA%E5%A4%9A%E5%AE%9E%E4%BE%8B/&title=《mysql 单机多实例》 — Jerry Chan&pic=http://example.com/img/avatar.jpg" data-title="微博">
+          <i class="icon icon-weibo"></i>
+        </a>
+      </li>
+      <li>
+        <a class="weixin share-sns wxFab" href="javascript:;" data-title="微信">
+          <i class="icon icon-weixin"></i>
+        </a>
+      </li>
+      <li>
+        <a class="qq share-sns" target="_blank" href="http://connect.qq.com/widget/shareqq/index.html?url=http://example.com/2022/12/16/mysql-%E5%8D%95%E6%9C%BA%E5%A4%9A%E5%AE%9E%E4%BE%8B/&title=《mysql 单机多实例》 — Jerry Chan&source=" data-title=" QQ">
+          <i class="icon icon-qq"></i>
+        </a>
+      </li>
+      <li>
+        <a class="facebook share-sns" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http://example.com/2022/12/16/mysql-%E5%8D%95%E6%9C%BA%E5%A4%9A%E5%AE%9E%E4%BE%8B/" data-title=" Facebook">
+          <i class="icon icon-facebook"></i>
+        </a>
+      </li>
+      <li>
+        <a class="twitter share-sns" target="_blank" href="https://twitter.com/intent/tweet?text=《mysql 单机多实例》 — Jerry Chan&url=http://example.com/2022/12/16/mysql-%E5%8D%95%E6%9C%BA%E5%A4%9A%E5%AE%9E%E4%BE%8B/&via=http://example.com" data-title=" Twitter">
+          <i class="icon icon-twitter"></i>
+        </a>
+      </li>
+      <li>
+        <a class="google share-sns" target="_blank" href="https://plus.google.com/share?url=http://example.com/2022/12/16/mysql-%E5%8D%95%E6%9C%BA%E5%A4%9A%E5%AE%9E%E4%BE%8B/" data-title=" Google+">
+          <i class="icon icon-google-plus"></i>
+        </a>
+      </li>
+    </ul>
+ </div>
+
+
+
+    <a href="javascript:;" id="shareFab" class="page-share-fab waves-effect waves-circle">
+        <i class="icon icon-share-alt icon-lg"></i>
+    </a>
+</div>
+
+
+
+        </div>
+    </div>
+
+    
+<nav class="post-nav flex-row flex-justify-between">
+  
+    <div class="waves-block waves-effect prev">
+      <a href="/2023/03/26/hello-world/" id="post-prev" class="post-nav-link">
+        <div class="tips"><i class="icon icon-angle-left icon-lg icon-pr"></i> Prev</div>
+        <h4 class="title">Hello World</h4>
+      </a>
+    </div>
+  
+
+  
+</nav>
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</article>
+
+
+
+</div>
+
+        <footer class="footer">
+    <div class="top">
+        
+<p>
+    <span id="busuanzi_container_site_uv" style='display:none'>
+        站点总访客数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span id="busuanzi_container_site_pv" style='display:none'>
+        站点总访问量：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</p>
+
+
+        <p>
+            
+                <span><a href="/atom.xml" target="_blank" class="rss" title="rss"><i class="icon icon-lg icon-rss"></i></a></span>
+            
+            <span>博客内容遵循 <a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" target="_blank">知识共享 署名 - 非商业性 - 相同方式共享 4.0 国际协议</a></span>
+        </p>
+    </div>
+    <div class="bottom">
+        <p><span>Jerry Chan &copy; 2023 - 2024</span>
+            <span>
+                
+                Power by <a href="http://hexo.io/" target="_blank">Hexo</a> Theme <a href="https://github.com/yscoder/hexo-theme-indigo" target="_blank">indigo</a>
+            </span>
+        </p>
+    </div>
+</footer>
+
+    </main>
+    <div class="mask" id="mask"></div>
+<a href="javascript:;" id="gotop" class="waves-effect waves-circle waves-light"><span class="icon icon-lg icon-chevron-up"></span></a>
+
+
+
+<div class="global-share" id="globalShare">
+    <ul class="reset share-icons">
+      <li>
+        <a class="weibo share-sns" target="_blank" href="http://service.weibo.com/share/share.php?url=http://example.com/2022/12/16/mysql-%E5%8D%95%E6%9C%BA%E5%A4%9A%E5%AE%9E%E4%BE%8B/&title=《mysql 单机多实例》 — Jerry Chan&pic=http://example.com/img/avatar.jpg" data-title="微博">
+          <i class="icon icon-weibo"></i>
+        </a>
+      </li>
+      <li>
+        <a class="weixin share-sns wxFab" href="javascript:;" data-title="微信">
+          <i class="icon icon-weixin"></i>
+        </a>
+      </li>
+      <li>
+        <a class="qq share-sns" target="_blank" href="http://connect.qq.com/widget/shareqq/index.html?url=http://example.com/2022/12/16/mysql-%E5%8D%95%E6%9C%BA%E5%A4%9A%E5%AE%9E%E4%BE%8B/&title=《mysql 单机多实例》 — Jerry Chan&source=" data-title=" QQ">
+          <i class="icon icon-qq"></i>
+        </a>
+      </li>
+      <li>
+        <a class="facebook share-sns" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http://example.com/2022/12/16/mysql-%E5%8D%95%E6%9C%BA%E5%A4%9A%E5%AE%9E%E4%BE%8B/" data-title=" Facebook">
+          <i class="icon icon-facebook"></i>
+        </a>
+      </li>
+      <li>
+        <a class="twitter share-sns" target="_blank" href="https://twitter.com/intent/tweet?text=《mysql 单机多实例》 — Jerry Chan&url=http://example.com/2022/12/16/mysql-%E5%8D%95%E6%9C%BA%E5%A4%9A%E5%AE%9E%E4%BE%8B/&via=http://example.com" data-title=" Twitter">
+          <i class="icon icon-twitter"></i>
+        </a>
+      </li>
+      <li>
+        <a class="google share-sns" target="_blank" href="https://plus.google.com/share?url=http://example.com/2022/12/16/mysql-%E5%8D%95%E6%9C%BA%E5%A4%9A%E5%AE%9E%E4%BE%8B/" data-title=" Google+">
+          <i class="icon icon-google-plus"></i>
+        </a>
+      </li>
+    </ul>
+ </div>
+
+
+<div class="page-modal wx-share" id="wxShare">
+    <a class="close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAN4AAADeCAAAAAB3DOFrAAACwElEQVR42u3aS27jMBAFwNz/0gmQdSS//lDKorQyJo7N4gBs5nV/fcXP9+9z/zr56eTfr3668ODh4eG1ln719BadbMHke5PfxcPDwzvNy5d7f1jfLyI5t5PCUCgteHh4eK/y8qvt1YLuN+Xq/aPLOh4eHt6rvMmRff+N+TUaDw8P7//wklAgP9B3Q4qHshY8PDy8mLfVAHvy9Qv9PTw8PLy4EZUfwb0mVi84jtaGh4eHd4DXG2m6X1bvcpy3xMrxBx4eHt4BXg+TB7v5J1e3rPfJeHh4eBNeoY1UHBSoDhP0WlzRZRoPDw/vMK8aOuS/Vb1M5423y23Fw8PDe5CXvM7jgK1LebKGqDDg4eHhDXjVP/t7aUevhPTK1R8iPDw8vFVe72vy4GAr9s1Ly+XQAB4eHt4qLz+Ik+A1Lye9q/NoLAAPDw9viVdtNVU3ojfYOilLf1yp8fDw8JZ41WvrfFC1+jnVwtYMc/Hw8PDiNefX5a1ikBeGfFs/5NN4eHh4q7xJ+yr/6CSGKIwCzGMLPDw8vAFva6G9sYD5SMGHFeLh4eEd4OVvzaOKXmBx4v14eHh453h5XDtp6lcLRl6oPvyP4eHh4a3yek2vPGbN44Ze/BGl1Hh4eHgHeIX5gtZx34s88kD5cg14eHh4B3gJqYpPvjgpEnmJijYaDw8P70FePmSwFUBUB7bKmTQeHh7emDcJVfMCMH+qIwh4eHh4z/Cq4wK90LYaGU+KEx4eHt4ur3c0562sXuGpbv3lNuHh4eEd4PUO32p7rFypWs2zXlHBw8PD6/Gqzac8dKge7nnjLS9LeHh4eOd4+aE8b4P1yswoksDDw8N7lVf9s796sU4+vzwTgYeHh/cSbzJgmgwEJJg89sXDw8M7zZtcfPPyUD30q0NXoxgXDw8Pb6n1lTef5pvSGyNYCDXw8PDwUt4PUGX33Ri1SeEAAAAASUVORK5CYII=" alt="微信分享二维码">
+</div>
+
+
+
+
+    <script src="//cdn.bootcss.com/node-waves/0.7.4/waves.min.js"></script>
+<script>
+var BLOG = { ROOT: '/', SHARE: true, REWARD: false };
+
+
+</script>
+
+<script src="//unpkg.com/hexo-theme-material-indigo@latest/js/main.min.js"></script>
+
+
+<div class="search-panel" id="search-panel">
+    <ul class="search-result" id="search-result"></ul>
+</div>
+<template id="search-tpl">
+<li class="item">
+    <a href="{path}" class="waves-block waves-effect">
+        <div class="title ellipsis" title="{title}">{title}</div>
+        <div class="flex-row flex-middle">
+            <div class="tags ellipsis">
+                {tags}
+            </div>
+            <time class="flex-col time">{date}</time>
+        </div>
+    </a>
+</li>
+</template>
+
+<script src="//unpkg.com/hexo-theme-material-indigo@latest/js/search.min.js" async></script>
+
+
+
+
+
+
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+<script>
+(function() {
+    var OriginTitile = document.title, titleTime;
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            document.title = '大爷别走呀！';
+            clearTimeout(titleTime);
+        } else {
+            document.title = '来啦，老弟!';
+            titleTime = setTimeout(function() {
+                document.title = OriginTitile;
+            },2000);
+        }
+    });
+})();
+</script>
+
+
+
+</body>
+</html>
