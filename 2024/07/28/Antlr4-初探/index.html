@@ -28,19 +28,19 @@
 <meta property="og:site_name" content="Jerry Chan">
 <meta property="og:description" content="最近在看 Shardingjdbc 源码，其中 Sql 使用的语法解析器是 Antlr4，经过了解许多框架都使用 Antlr4 作为语法解析器。  简介Antlr 全称（ANother Tool for Language Recognition），是一款强大的语法分析器生成工具，像推特、Hadoop、Oracle 等知名公司都在使用它来构建自己的语言处理类项目。 一门语言的正式描述称为语法，An">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://imgse.com/i/pkq4R4x">
-<meta property="og:image" content="https://imgse.com/i/pkq4fC6">
+<meta property="og:image" content="https://s21.ax1x.com/2024/07/28/pkq4R4x.png">
+<meta property="og:image" content="https://s21.ax1x.com/2024/07/28/pkq4fC6.png">
 <meta property="og:image" content="https://s21.ax1x.com/2024/07/28/pkq45vD.png">
-<meta property="og:image" content="https://imgse.com/i/pkq4TDH">
+<meta property="og:image" content="https://s21.ax1x.com/2024/07/28/pkq4TDH.png">
 <meta property="og:image" content="https://s21.ax1x.com/2024/07/28/pkq4bVA.png">
-<meta property="og:image" content="https://imgse.com/i/pkq59bj">
+<meta property="og:image" content="https://s21.ax1x.com/2024/07/28/pkq59bj.png">
 <meta property="og:image" content="https://s21.ax1x.com/2024/07/28/pkq5PVs.png">
 <meta property="og:image" content="https://s21.ax1x.com/2024/07/28/pkq5ian.png">
 <meta property="article:published_time" content="2024-07-28T08:59:57.000Z">
-<meta property="article:modified_time" content="2024-07-28T09:34:44.620Z">
+<meta property="article:modified_time" content="2024-07-28T09:47:06.856Z">
 <meta property="article:author" content="Jerry Chan">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://imgse.com/i/pkq4R4x">
+<meta name="twitter:image" content="https://s21.ax1x.com/2024/07/28/pkq4R4x.png">
     
         <link rel="alternate" type="application/atom+xml" title="Jerry Chan" href="/atom.xml">
     
@@ -201,25 +201,13 @@
 <h3 id="基本概念"><a href="#基本概念" class="headerlink" title="基本概念"></a>基本概念</h3><h4 id="词法分析器-Lexer"><a href="#词法分析器-Lexer" class="headerlink" title="词法分析器 (Lexer)"></a>词法分析器 (Lexer)</h4><ul>
 <li>词法分析是指在计算机科学中，将字符序列转换为单词（Token）的过程，简单理解就是分词的过程。</li>
 <li>所谓 Token ，就是源文件中不可再进一步分割的一串字符，类似于英语中单词，或汉语中的词。</li>
-<li>==词法分析器 (Lexer) 就是根据规则将文本（字符流）转换为单词（Token）的程序。==<br>[<figure class="image-bubble">
-                <div class="img-lightbox">
-                    <div class="overlay"></div>
-                    <img src="https://imgse.com/i/pkq4R4x" alt="pkq4R4x.png](https://s21.ax1x.com/2024/07/28/pkq4R4x.png)" title="">
-                </div>
-                <div class="image-caption">pkq4R4x.png](https://s21.ax1x.com/2024/07/28/pkq4R4x.png)</div>
-            </figure></li>
+<li>==词法分析器 (Lexer) 就是根据规则将文本（字符流）转换为单词（Token）的程序。==<img src="https://s21.ax1x.com/2024/07/28/pkq4R4x.png" alt="截图" /></li>
 </ul>
 <h4 id="语法解析器-Parser"><a href="#语法解析器-Parser" class="headerlink" title="语法解析器 (Parser)"></a>语法解析器 (Parser)</h4><ul>
 <li>词法分析完成后，字符流就被转换为 Token 流了，接下来根据语言的语法规则来解析这个 Token 流，被称为语法解析。</li>
-<li>语法解析器通常作为编译器或解释器出现。==它的作用是进行语法检查，并将词法分析器（Lexer）输出的 Token 流解析成一个抽象语法树。==<br>[<figure class="image-bubble">
-                <div class="img-lightbox">
-                    <div class="overlay"></div>
-                    <img src="https://imgse.com/i/pkq4fC6" alt="pkq4fC6.png](https://s21.ax1x.com/2024/07/28/pkq4fC6.png)" title="">
-                </div>
-                <div class="image-caption">pkq4fC6.png](https://s21.ax1x.com/2024/07/28/pkq4fC6.png)</div>
-            </figure><h4 id="抽象语法树-Abstract-Syntax-Tree-AST"><a href="#抽象语法树-Abstract-Syntax-Tree-AST" class="headerlink" title="抽象语法树 (Abstract Syntax Tree,AST)"></a>抽象语法树 (Abstract Syntax Tree,AST)</h4></li>
+<li>语法解析器通常作为编译器或解释器出现。==它的作用是进行语法检查，并将词法分析器（Lexer）输出的 Token 流解析成一个抽象语法树。==<img src="https://s21.ax1x.com/2024/07/28/pkq4fC6.png" alt="截图" /></li>
 </ul>
-<p>抽象语法树是源代码结构的一种抽象表示，它以树的形状表示语言的语法结构。抽象语法树一般可以用来进行代码语法的检查，代码风格的检查，代码的格式化，代码的高亮，代码的错误提示以及代码的自动补全等等。</p>
+<h4 id="抽象语法树-Abstract-Syntax-Tree-AST"><a href="#抽象语法树-Abstract-Syntax-Tree-AST" class="headerlink" title="抽象语法树 (Abstract Syntax Tree,AST)"></a>抽象语法树 (Abstract Syntax Tree,AST)</h4><p>抽象语法树是源代码结构的一种抽象表示，它以树的形状表示语言的语法结构。抽象语法树一般可以用来进行代码语法的检查，代码风格的检查，代码的格式化，代码的高亮，代码的错误提示以及代码的自动补全等等。</p>
 <br/>
 
 <h3 id="Antlr-Grammar文件简介"><a href="#Antlr-Grammar文件简介" class="headerlink" title="Antlr  Grammar文件简介"></a>Antlr  Grammar文件简介</h3><p>下面是一个简单的 Grammar 文件 Expr.g4，定义了一个简单的四则运算语法规则。</p>
@@ -237,28 +225,21 @@
 
 <h3 id="DEMO"><a href="#DEMO" class="headerlink" title="DEMO"></a>DEMO</h3><h4 id="安装-Antlr"><a href="#安装-Antlr" class="headerlink" title="安装 Antlr"></a>安装 Antlr</h4><p>安装 Anltr 的方式有很多种，可以安装系统命令行工具，也可以是 ide 插件，本文安装的是 idea 插件。其他方式可以参考 <a href="https://github.com/antlr/antlr4/blob/master/doc/getting-started.md" target="_blank" rel="noopener">传送门</a>。</p>
 <img src="https://s21.ax1x.com/2024/07/28/pkq45vD.png" alt="截图" style="zoom:50%;" />
+<br><br>
+<img src="https://s21.ax1x.com/2024/07/28/pkq4TDH.png" alt="截图" />
+配置也很简单，我这主要配了根据规则生成的代码路径、已经生成的代码语言。
 
-<p>[<figure class="image-bubble">
-                <div class="img-lightbox">
-                    <div class="overlay"></div>
-                    <img src="https://imgse.com/i/pkq4TDH" alt="pkq4TDH.png](https://s21.ax1x.com/2024/07/28/pkq4TDH.png)" title="">
-                </div>
-                <div class="image-caption">pkq4TDH.png](https://s21.ax1x.com/2024/07/28/pkq4TDH.png)</div>
-            </figure><br>配置也很简单，我这主要配了根据规则生成的代码路径、已经生成的代码语言。</p>
+
 <h4 id="编写-Grammer-文件"><a href="#编写-Grammer-文件" class="headerlink" title="编写 Grammer 文件"></a>编写 Grammer 文件</h4><p>这里直接使用上述讲解中使用的语法文件</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">grammar Expr;</span><br><span class="line">package org.apache.shardingsphere.example.parser.demo;</span><br><span class="line">prog:    expr EOF ;</span><br><span class="line">expr:    expr (&#39;*&#39;|&#39;&#x2F;&#39;) expr  #MultiOrDiv</span><br><span class="line">    |    expr (&#39;+&#39;|&#39;-&#39;) expr  #AddOrSub</span><br><span class="line">    |    INT     #Lieteral</span><br><span class="line">    |    &#39;(&#39; expr &#39;)&#39;   #Single</span><br><span class="line">    ;</span><br><span class="line">NEWLINE : [\r\n]+ -&gt; skip;</span><br><span class="line">INT     : [0-9]+ ;</span><br></pre></td></tr></table></figure>
 
 <h4 id="使用插件解析语法树"><a href="#使用插件解析语法树" class="headerlink" title="使用插件解析语法树"></a>使用插件解析语法树</h4><img src="https://s21.ax1x.com/2024/07/28/pkq4bVA.png" alt="截图" style="zoom:50%;" />
+<br><br>
+<img src="https://s21.ax1x.com/2024/07/28/pkq59bj.png" alt="截图" />
 
-<p>[<figure class="image-bubble">
-                <div class="img-lightbox">
-                    <div class="overlay"></div>
-                    <img src="https://imgse.com/i/pkq59bj" alt="pkq59bj.png](https://s21.ax1x.com/2024/07/28/pkq59bj.png)" title="">
-                </div>
-                <div class="image-caption">pkq59bj.png](https://s21.ax1x.com/2024/07/28/pkq59bj.png)</div>
-            </figure></p>
+
 <h4 id="根据-Grammer-文件生成代码"><a href="#根据-Grammer-文件生成代码" class="headerlink" title="根据 Grammer 文件生成代码"></a>根据 Grammer 文件生成代码</h4><img src="https://s21.ax1x.com/2024/07/28/pkq5PVs.png" alt="截图" style="zoom:50%;" />
-
+<br><br>
 <img src="https://s21.ax1x.com/2024/07/28/pkq5ian.png" alt="截图" style="zoom:80%;" />
 
 <p>其中文件的含义：</p>
@@ -295,7 +276,7 @@
     <div class="content">
         
 <span class="post-time">
-    最后更新时间：<time datetime="2024-07-28T09:34:44.620Z" itemprop="dateUpdated">2024-07-28 17:34:44</time>
+    最后更新时间：<time datetime="2024-07-28T09:47:06.856Z" itemprop="dateUpdated">2024-07-28 17:47:06</time>
 </span><br>
 
 
