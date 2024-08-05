@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+
+    
+
+    
+
+
+
+    <meta charset="utf-8">
+    
+    
+    
+    
+    <title>记一次 opentelemetry 日志打印 traceId 缺失问题分析 | Jerry Chan</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    
+    <meta name="theme-color" content="#3F51B5">
+    
+    
+    <meta name="keywords" content="">
+    <meta name="description" content="背景：项目中有一些消费 kafka 消息者打印的日志中缺失 traceId，项目中使用的是 javaagent 的方式接入 opentelemetry，使用的版本是 1.4.x。   Kafka 生产者首先看看生产者消息发送方法的方法增强 1234567891011121314151617181920212223242526272829303132333435363738394041424344">
+<meta property="og:type" content="article">
+<meta property="og:title" content="记一次 opentelemetry 日志打印 traceId 缺失问题分析">
+<meta property="og:url" content="http://example.com/2024/08/05/%E8%AE%B0%E4%B8%80%E6%AC%A1-opentelemetry-%E6%97%A5%E5%BF%97%E6%89%93%E5%8D%B0-traceId-%E7%BC%BA%E5%A4%B1%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90/index.html">
+<meta property="og:site_name" content="Jerry Chan">
+<meta property="og:description" content="背景：项目中有一些消费 kafka 消息者打印的日志中缺失 traceId，项目中使用的是 javaagent 的方式接入 opentelemetry，使用的版本是 1.4.x。   Kafka 生产者首先看看生产者消息发送方法的方法增强 1234567891011121314151617181920212223242526272829303132333435363738394041424344">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://s21.ax1x.com/2024/08/05/pkvU8Ig.png">
+<meta property="article:published_time" content="2024-08-05T03:51:33.000Z">
+<meta property="article:modified_time" content="2024-08-05T04:05:40.501Z">
+<meta property="article:author" content="Jerry Chan">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://s21.ax1x.com/2024/08/05/pkvU8Ig.png">
+    
+        <link rel="alternate" type="application/atom+xml" title="Jerry Chan" href="/atom.xml">
+    
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="stylesheet" href="//unpkg.com/hexo-theme-material-indigo@latest/css/style.css">
+    <script>window.lazyScripts=[]</script>
+
+    <!-- custom head -->
+    
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body>
+    <div id="loading" class="active"></div>
+
+    <aside id="menu" class="hide" >
+  <div class="inner flex-row-vertical">
+    <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="menu-off">
+        <i class="icon icon-lg icon-close"></i>
+    </a>
+    <div class="brand-wrap" style="background-image:url(/img/brand.jpg)">
+      <div class="brand">
+        <a href="/" class="avatar waves-effect waves-circle waves-light">
+          <img src="/img/avatar.jpg">
+        </a>
+        <hgroup class="introduce">
+          <h5 class="nickname">Jerry Chan</h5>
+          <a href="mailto:jerrtqtqcjl@gmail.com" title="jerrtqtqcjl@gmail.com" class="mail">jerrtqtqcjl@gmail.com</a>
+        </hgroup>
+      </div>
+    </div>
+    <div class="scroll-wrap flex-col">
+      <ul class="nav">
+        
+            <li class="waves-block waves-effect">
+              <a href="/"  >
+                <i class="icon icon-lg icon-home"></i>
+                主页
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/archives"  >
+                <i class="icon icon-lg icon-archives"></i>
+                归档
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/tags"  >
+                <i class="icon icon-lg icon-tags"></i>
+                标签
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/categories"  >
+                <i class="icon icon-lg icon-th-list"></i>
+                目录
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="https://github.com/JerryQTQcjl" target="_blank" >
+                <i class="icon icon-lg icon-github"></i>
+                Github
+              </a>
+            </li>
+        
+      </ul>
+    </div>
+  </div>
+</aside>
+
+    <main id="main">
+        <header class="top-header" id="header">
+    <div class="flex-row">
+        <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light on" id="menu-toggle">
+          <i class="icon icon-lg icon-navicon"></i>
+        </a>
+        <div class="flex-col header-title ellipsis">记一次 opentelemetry 日志打印 traceId 缺失问题分析</div>
+        
+        <div class="search-wrap" id="search-wrap">
+            <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="back">
+                <i class="icon icon-lg icon-chevron-left"></i>
+            </a>
+            <input type="text" id="key" class="search-input" autocomplete="off" placeholder="输入感兴趣的关键字">
+            <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="search">
+                <i class="icon icon-lg icon-search"></i>
+            </a>
+        </div>
+        
+        
+        <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="menuShare">
+            <i class="icon icon-lg icon-share-alt"></i>
+        </a>
+        
+    </div>
+</header>
+<header class="content-header post-header">
+
+    <div class="container fade-scale">
+        <h1 class="title">记一次 opentelemetry 日志打印 traceId 缺失问题分析</h1>
+        <h5 class="subtitle">
+            
+                <time datetime="2024-08-05T03:51:33.000Z" itemprop="datePublished" class="page-time">
+  2024-08-05
+</time>
+
+
+            
+        </h5>
+    </div>
+
+    
+
+
+</header>
+
+
+<div class="container body-wrap">
+    
+    <aside class="post-widget">
+        <nav class="post-toc-wrap post-toc-shrink" id="post-toc">
+            <h4>TOC</h4>
+            <ol class="post-toc"><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#Kafka-生产者"><span class="post-toc-number">1.</span> <span class="post-toc-text">Kafka 生产者</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-4"><a class="post-toc-link" href="#从上述源码可以看到："><span class="post-toc-number">1.1.</span> <span class="post-toc-text">从上述源码可以看到：</span></a></li><li class="post-toc-item post-toc-level-4"><a class="post-toc-link" href="#Producer-traceId-消息缺失分析"><span class="post-toc-number">1.2.</span> <span class="post-toc-text">Producer traceId 消息缺失分析</span></a></li></ol></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#Kafka-消费者"><span class="post-toc-number">2.</span> <span class="post-toc-text">Kafka 消费者</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-4"><a class="post-toc-link" href="#从上述源码可以看到：-1"><span class="post-toc-number">2.1.</span> <span class="post-toc-text">从上述源码可以看到：</span></a></li><li class="post-toc-item post-toc-level-4"><a class="post-toc-link" href="#Consumer-traceId-消息缺失分析"><span class="post-toc-number">2.2.</span> <span class="post-toc-text">Consumer traceId 消息缺失分析</span></a></li></ol></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#Opentelemetry-日志上下文"><span class="post-toc-number">3.</span> <span class="post-toc-text">Opentelemetry 日志上下文</span></a></li></ol>
+        </nav>
+    </aside>
+
+
+<article id="post-记一次-opentelemetry-日志打印-traceId-缺失问题分析"
+  class="post-article article-type-post fade" itemprop="blogPost">
+
+    <div class="post-card">
+        <h1 class="post-card-title">记一次 opentelemetry 日志打印 traceId 缺失问题分析</h1>
+        <div class="post-meta">
+            <time class="post-time" title="2024-08-05 11:51:33" datetime="2024-08-05T03:51:33.000Z"  itemprop="datePublished">2024-08-05</time>
+
+            
+
+
+            
+<span id="busuanzi_container_page_pv" title="文章总阅读量" style='display:none'>
+    <i class="icon icon-eye icon-pr"></i><span id="busuanzi_value_page_pv"></span>
+</span>
+
+
+        </div>
+        <div class="post-content" id="post-content" itemprop="postContent">
+            <blockquote>
+<p>背景：项目中有一些消费 kafka 消息者打印的日志中缺失 traceId，项目中使用的是 javaagent 的方式接入 opentelemetry，使用的版本是 1.4.x。 <br/></p>
+</blockquote>
+<h3 id="Kafka-生产者"><a href="#Kafka-生产者" class="headerlink" title="Kafka 生产者"></a>Kafka 生产者</h3><p>首先看看生产者消息发送方法的方法增强</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">ProducerAdvice</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Advice</span>.OnMethodEnter(suppress = Throwable<span class="class">.<span class="keyword">class</span>)</span></span><br><span class="line"><span class="class">    <span class="title">public</span> <span class="title">static</span> <span class="title">void</span> <span class="title">onEnter</span>(</span></span><br><span class="line">        @Advice.FieldValue("apiVersions") ApiVersions apiVersions,</span><br><span class="line">        <span class="meta">@Advice</span>.Argument(value = <span class="number">0</span>, readOnly = <span class="keyword">false</span>) ProducerRecord&lt;?, ?&gt; record,</span><br><span class="line">        <span class="meta">@Advice</span>.Argument(value = <span class="number">1</span>, readOnly = <span class="keyword">false</span>) Callback callback,</span><br><span class="line">        <span class="meta">@Advice</span>.Local(<span class="string">"otelContext"</span>) Context context,</span><br><span class="line">        <span class="meta">@Advice</span>.Local(<span class="string">"otelScope"</span>) Scope scope) &#123;</span><br><span class="line">      <span class="comment">// 获取当前线程上下文</span></span><br><span class="line">      Context parentContext = Java8BytecodeBridge.currentContext();</span><br><span class="line">      <span class="comment">// 生成 context (包括生成 span)</span></span><br><span class="line">      context = tracer().startProducerSpan(parentContext, record);</span><br><span class="line"></span><br><span class="line">      callback = <span class="keyword">new</span> ProducerCallback(callback, parentContext, context);</span><br><span class="line">    </span><br><span class="line">      <span class="comment">// 判断是否需要传播链路</span></span><br><span class="line">      <span class="keyword">if</span> (tracer().shouldPropagate(apiVersions)) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">          <span class="comment">// 往请求头中添加 span 信息</span></span><br><span class="line">          tracer().inject(context, record.headers(), SETTER);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (IllegalStateException e) &#123;</span><br><span class="line">          <span class="comment">// headers must be read-only from reused record. try again with new one.</span></span><br><span class="line">          record =</span><br><span class="line">              <span class="keyword">new</span> ProducerRecord&lt;&gt;(</span><br><span class="line">                  record.topic(),</span><br><span class="line">                  record.partition(),</span><br><span class="line">                  record.timestamp(),</span><br><span class="line">                  record.key(),</span><br><span class="line">                  record.value(),</span><br><span class="line">                  record.headers());</span><br><span class="line"></span><br><span class="line">          tracer().inject(context, record.headers(), SETTER);</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="comment">// 将生成的 context 设置到当前上下文（默认使用threadLocal）</span></span><br><span class="line">      scope = context.makeCurrent();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Advice</span>.OnMethodExit(onThrowable = Throwable<span class="class">.<span class="keyword">class</span>, <span class="title">suppress</span> </span>= Throwable<span class="class">.<span class="keyword">class</span>)</span></span><br><span class="line"><span class="class">    <span class="title">public</span> <span class="title">static</span> <span class="title">void</span> <span class="title">stopSpan</span>(</span></span><br><span class="line"><span class="class">        @<span class="title">Advice</span>.<span class="title">Thrown</span> <span class="title">Throwable</span> <span class="title">throwable</span>,</span></span><br><span class="line">        @Advice.Local("otelContext") Context context,</span><br><span class="line">        <span class="meta">@Advice</span>.Local(<span class="string">"otelScope"</span>) Scope scope) &#123;</span><br><span class="line">      </span><br><span class="line">      <span class="comment">// 将当前上下文清空，并恢复到父上下文（如果存在的话）</span></span><br><span class="line">      scope.close();</span><br><span class="line"></span><br><span class="line">      <span class="keyword">if</span> (throwable != <span class="keyword">null</span>) &#123;</span><br><span class="line">        tracer().endExceptionally(context, throwable);</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="comment">// span finished by ProducerCallback</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="从上述源码可以看到："><a href="#从上述源码可以看到：" class="headerlink" title="从上述源码可以看到："></a>从上述源码可以看到：</h4><ol>
+<li>方法增强会在发送消息前生成 context，如果存在 parentContext 则使用 parentContext 的 traceId。</li>
+<li>如果支持传播，则会将 span 组装好放到消息 header，具体参数名看使用的是什么协议，默认是 traceparent，这里使用 jaeger，所以参数名是 uber-trace-id。</li>
+<li>将生成的 context 设置到当前线程上下文</li>
+<li>消息发送结束时会将线程上下文恢复到原本的上下文</li>
+</ol>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://s21.ax1x.com/2024/08/05/pkvU8Ig.png" alt="" title="">
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<h4 id="Producer-traceId-消息缺失分析"><a href="#Producer-traceId-消息缺失分析" class="headerlink" title="Producer traceId 消息缺失分析"></a>Producer traceId 消息缺失分析</h4><ol>
+<li>由于当前不存在上下文，生产者在发送完消息后就直接将上下文清空了，所以后续打印的日志都不存在上下文</li>
+<li>通过 callback 打印日志，由于 callback 是在另外一个线程执行，所以也获取不到上下文</li>
+</ol>
+<br/>
+
+<h3 id="Kafka-消费者"><a href="#Kafka-消费者" class="headerlink" title="Kafka 消费者"></a>Kafka 消费者</h3><p>首先看看消费者消息消费方法的方法增强</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">transform</span><span class="params">(TypeTransformer transformer)</span> </span>&#123;</span><br><span class="line">    transformer.applyAdviceToMethod(</span><br><span class="line">        isMethod()</span><br><span class="line">            .and(isPublic())</span><br><span class="line">            .and(named(<span class="string">"records"</span>))</span><br><span class="line">            .and(takesArgument(<span class="number">0</span>, String<span class="class">.<span class="keyword">class</span>))</span></span><br><span class="line"><span class="class">            .<span class="title">and</span>(<span class="title">returns</span>(<span class="title">Iterable</span>.<span class="title">class</span>)),</span></span><br><span class="line">        KafkaConsumerInstrumentation.class.getName() + "$IterableAdvice");</span><br><span class="line">    transformer.applyAdviceToMethod(</span><br><span class="line">        isMethod()</span><br><span class="line">            .and(isPublic())</span><br><span class="line">            .and(named(<span class="string">"records"</span>))</span><br><span class="line">            .and(takesArgument(<span class="number">0</span>, named(<span class="string">"org.apache.kafka.common.TopicPartition"</span>)))</span><br><span class="line">            .and(returns(List<span class="class">.<span class="keyword">class</span>)),</span></span><br><span class="line">        KafkaConsumerInstrumentation.class.getName() + "$ListAdvice");</span><br><span class="line">    transformer.applyAdviceToMethod(</span><br><span class="line">        isMethod()</span><br><span class="line">            .and(isPublic())</span><br><span class="line">            .and(named(<span class="string">"iterator"</span>))</span><br><span class="line">            .and(takesArguments(<span class="number">0</span>))</span><br><span class="line">            .and(returns(Iterator<span class="class">.<span class="keyword">class</span>)),</span></span><br><span class="line">        KafkaConsumerInstrumentation.class.getName() + "$IteratorAdvice");</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@SuppressWarnings</span>(<span class="string">"unused"</span>)</span><br><span class="line">  <span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">IterableAdvice</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Advice</span>.OnMethodExit(suppress = Throwable<span class="class">.<span class="keyword">class</span>)</span></span><br><span class="line"><span class="class">    <span class="title">public</span> <span class="title">static</span> <span class="title">void</span> <span class="title">wrap</span>(</span></span><br><span class="line"><span class="class">        @<span class="title">Advice</span>.<span class="title">Return</span>(<span class="title">readOnly</span> </span>= <span class="keyword">false</span>) Iterable&lt;ConsumerRecord&lt;?, ?&gt;&gt; iterable) &#123;</span><br><span class="line">      <span class="keyword">if</span> (iterable != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="comment">// 覆盖迭代器</span></span><br><span class="line">        iterable = <span class="keyword">new</span> TracingIterable(iterable, tracer());</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@SuppressWarnings</span>(<span class="string">"unused"</span>)</span><br><span class="line">  <span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">ListAdvice</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Advice</span>.OnMethodExit(suppress = Throwable<span class="class">.<span class="keyword">class</span>)</span></span><br><span class="line"><span class="class">    <span class="title">public</span> <span class="title">static</span> <span class="title">void</span> <span class="title">wrap</span>(@<span class="title">Advice</span>.<span class="title">Return</span>(<span class="title">readOnly</span> </span>= <span class="keyword">false</span>) List&lt;ConsumerRecord&lt;?, ?&gt;&gt; iterable) &#123;</span><br><span class="line">      <span class="keyword">if</span> (iterable != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="comment">// 覆盖List</span></span><br><span class="line">        iterable = <span class="keyword">new</span> TracingList(iterable, tracer());</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@SuppressWarnings</span>(<span class="string">"unused"</span>)</span><br><span class="line">  <span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">IteratorAdvice</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Advice</span>.OnMethodExit(suppress = Throwable<span class="class">.<span class="keyword">class</span>)</span></span><br><span class="line"><span class="class">    <span class="title">public</span> <span class="title">static</span> <span class="title">void</span> <span class="title">wrap</span>(</span></span><br><span class="line"><span class="class">        @<span class="title">Advice</span>.<span class="title">Return</span>(<span class="title">readOnly</span> </span>= <span class="keyword">false</span>) Iterator&lt;ConsumerRecord&lt;?, ?&gt;&gt; iterator) &#123;</span><br><span class="line">      <span class="keyword">if</span> (iterator != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="comment">// 覆盖迭代器</span></span><br><span class="line">        iterator = <span class="keyword">new</span> TracingIterator(iterator, tracer());</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TracingIterator</span> <span class="keyword">implements</span> <span class="title">Iterator</span>&lt;<span class="title">ConsumerRecord</span>&lt;?, ?&gt;&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> Iterator&lt;ConsumerRecord&lt;?, ?&gt;&gt; delegateIterator;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> KafkaConsumerTracer tracer;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Note: this may potentially create problems if this iterator is used from different threads. But</span></span><br><span class="line"><span class="comment">   * at the moment we cannot do much about this.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="meta">@Nullable</span> <span class="keyword">private</span> Context currentContext;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Nullable</span> <span class="keyword">private</span> Scope currentScope;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="title">TracingIterator</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">      Iterator&lt;ConsumerRecord&lt;?, ?&gt;&gt; delegateIterator, KafkaConsumerTracer tracer)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.delegateIterator = delegateIterator;</span><br><span class="line">    <span class="keyword">this</span>.tracer = tracer;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">hasNext</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    closeScopeAndEndSpan();</span><br><span class="line">    <span class="keyword">return</span> delegateIterator.hasNext();</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="keyword">public</span> ConsumerRecord&lt;?, ?&gt; next() &#123;</span><br><span class="line">    <span class="comment">// in case they didn't call hasNext()...</span></span><br><span class="line">    <span class="comment">// 清除上一条消息的上下文</span></span><br><span class="line">    closeScopeAndEndSpan();</span><br><span class="line"></span><br><span class="line">    ConsumerRecord&lt;?, ?&gt; next = delegateIterator.next();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (next != <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="comment">// 生成上下文，包含span，如果消息有上下文则提取</span></span><br><span class="line">      currentContext = tracer.startSpan(next);</span><br><span class="line">      currentScope = currentContext.makeCurrent();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> next;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">closeScopeAndEndSpan</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (currentScope != <span class="keyword">null</span>) &#123;</span><br><span class="line">      currentScope.close();</span><br><span class="line">      currentScope = <span class="keyword">null</span>;</span><br><span class="line">      tracer.end(currentContext);</span><br><span class="line">      currentContext = <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">remove</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    delegateIterator.remove();</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="从上述源码可以看到：-1"><a href="#从上述源码可以看到：-1" class="headerlink" title="从上述源码可以看到："></a>从上述源码可以看到：</h4><ol>
+<li>迭代器每获取下一个元素，会先清除上下文，然后再生成新的上下文，如果消息头有上下文信息则提取</li>
+<li>每次判断 hasNext 是都会清除上下文，所以遍历时循环结束，上下文也会被清除</li>
+</ol>
+<h4 id="Consumer-traceId-消息缺失分析"><a href="#Consumer-traceId-消息缺失分析" class="headerlink" title="Consumer traceId 消息缺失分析"></a>Consumer traceId 消息缺失分析</h4><ol>
+<li>同上在消费消息时，会使用 foreach，如果逻辑不在 foreach 之间，则会造成 traceId 缺失。</li>
+<li>有的是使用线程池，同样会造成 traceId 缺失</li>
+</ol>
+<br/>
+
+<h3 id="Opentelemetry-日志上下文"><a href="#Opentelemetry-日志上下文" class="headerlink" title="Opentelemetry 日志上下文"></a>Opentelemetry 日志上下文</h3><p>同样是先看看源码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">OpenTelemetryContextDataProvider</span> <span class="keyword">implements</span> <span class="title">ContextDataProvider</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Returns context from the current span when available.</span></span><br><span class="line"><span class="comment">   *</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@return</span> A map containing string versions of the traceId, spanId, and traceFlags, which can then</span></span><br><span class="line"><span class="comment">   *     be accessed from layout components</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> Map&lt;String, String&gt; <span class="title">supplyContextData</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    Span currentSpan = Span.current();</span><br><span class="line">    <span class="keyword">if</span> (!currentSpan.getSpanContext().isValid()) &#123;</span><br><span class="line">      <span class="keyword">return</span> Collections.emptyMap();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    Map&lt;String, String&gt; contextData = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">    SpanContext spanContext = currentSpan.getSpanContext();</span><br><span class="line">    contextData.put(TRACE_ID, spanContext.getTraceId());</span><br><span class="line">    contextData.put(SPAN_ID, spanContext.getSpanId());</span><br><span class="line">    contextData.put(TRACE_FLAGS, spanContext.getTraceFlags().asHex());</span><br><span class="line">    <span class="keyword">return</span> contextData;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>从源码中可以看出，不是使用的 MDC，另外可以尝试使用下面方式使用自定义的上下文数据存储（亲测不行，这个可以通过修改源码解决）</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -javaagent:path/to/opentelemetry-javaagent.jar -Dio.opentelemetry.context.contextStorageProvider=your.package.CustomContextStorageProvider -jar your-application.jar</span><br></pre></td></tr></table></figure>
+
+        </div>
+
+        <blockquote class="post-copyright">
+    
+    <div class="content">
+        
+<span class="post-time">
+    最后更新时间：<time datetime="2024-08-05T04:05:40.501Z" itemprop="dateUpdated">2024-08-05 12:05:40</time>
+</span><br>
+
+
+        
+    </div>
+    
+    <footer>
+        <a href="http://example.com">
+            <img src="/img/avatar.jpg" alt="Jerry Chan">
+            Jerry Chan
+        </a>
+    </footer>
+</blockquote>
+
+        
+
+
+        <div class="post-footer">
+            
+
+            
+<div class="page-share-wrap">
+    
+
+<div class="page-share" id="pageShare">
+    <ul class="reset share-icons">
+      <li>
+        <a class="weibo share-sns" target="_blank" href="http://service.weibo.com/share/share.php?url=http://example.com/2024/08/05/%E8%AE%B0%E4%B8%80%E6%AC%A1-opentelemetry-%E6%97%A5%E5%BF%97%E6%89%93%E5%8D%B0-traceId-%E7%BC%BA%E5%A4%B1%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90/&title=《记一次 opentelemetry 日志打印 traceId 缺失问题分析》 — Jerry Chan&pic=http://example.com/img/avatar.jpg" data-title="微博">
+          <i class="icon icon-weibo"></i>
+        </a>
+      </li>
+      <li>
+        <a class="weixin share-sns wxFab" href="javascript:;" data-title="微信">
+          <i class="icon icon-weixin"></i>
+        </a>
+      </li>
+      <li>
+        <a class="qq share-sns" target="_blank" href="http://connect.qq.com/widget/shareqq/index.html?url=http://example.com/2024/08/05/%E8%AE%B0%E4%B8%80%E6%AC%A1-opentelemetry-%E6%97%A5%E5%BF%97%E6%89%93%E5%8D%B0-traceId-%E7%BC%BA%E5%A4%B1%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90/&title=《记一次 opentelemetry 日志打印 traceId 缺失问题分析》 — Jerry Chan&source=" data-title=" QQ">
+          <i class="icon icon-qq"></i>
+        </a>
+      </li>
+      <li>
+        <a class="facebook share-sns" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http://example.com/2024/08/05/%E8%AE%B0%E4%B8%80%E6%AC%A1-opentelemetry-%E6%97%A5%E5%BF%97%E6%89%93%E5%8D%B0-traceId-%E7%BC%BA%E5%A4%B1%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90/" data-title=" Facebook">
+          <i class="icon icon-facebook"></i>
+        </a>
+      </li>
+      <li>
+        <a class="twitter share-sns" target="_blank" href="https://twitter.com/intent/tweet?text=《记一次 opentelemetry 日志打印 traceId 缺失问题分析》 — Jerry Chan&url=http://example.com/2024/08/05/%E8%AE%B0%E4%B8%80%E6%AC%A1-opentelemetry-%E6%97%A5%E5%BF%97%E6%89%93%E5%8D%B0-traceId-%E7%BC%BA%E5%A4%B1%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90/&via=http://example.com" data-title=" Twitter">
+          <i class="icon icon-twitter"></i>
+        </a>
+      </li>
+      <li>
+        <a class="google share-sns" target="_blank" href="https://plus.google.com/share?url=http://example.com/2024/08/05/%E8%AE%B0%E4%B8%80%E6%AC%A1-opentelemetry-%E6%97%A5%E5%BF%97%E6%89%93%E5%8D%B0-traceId-%E7%BC%BA%E5%A4%B1%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90/" data-title=" Google+">
+          <i class="icon icon-google-plus"></i>
+        </a>
+      </li>
+    </ul>
+ </div>
+
+
+
+    <a href="javascript:;" id="shareFab" class="page-share-fab waves-effect waves-circle">
+        <i class="icon icon-share-alt icon-lg"></i>
+    </a>
+</div>
+
+
+
+        </div>
+    </div>
+
+    
+<nav class="post-nav flex-row flex-justify-between flex-row-reverse">
+  
+
+  
+    <div class="waves-block waves-effect next">
+      <a href="/2024/07/28/Antlr4-%E5%88%9D%E6%8E%A2/" id="post-next" class="post-nav-link">
+        <div class="tips">Next <i class="icon icon-angle-right icon-lg icon-pl"></i></div>
+        <h4 class="title">Antlr4 初探</h4>
+      </a>
+    </div>
+  
+</nav>
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</article>
+
+
+
+</div>
+
+        <footer class="footer">
+    <div class="top">
+        
+<p>
+    <span id="busuanzi_container_site_uv" style='display:none'>
+        站点总访客数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span id="busuanzi_container_site_pv" style='display:none'>
+        站点总访问量：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</p>
+
+
+        <p>
+            
+                <span><a href="/atom.xml" target="_blank" class="rss" title="rss"><i class="icon icon-lg icon-rss"></i></a></span>
+            
+            <span>博客内容遵循 <a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" target="_blank">知识共享 署名 - 非商业性 - 相同方式共享 4.0 国际协议</a></span>
+        </p>
+    </div>
+    <div class="bottom">
+        <p><span>Jerry Chan &copy; 2023 - 2024</span>
+            <span>
+                
+                Power by <a href="http://hexo.io/" target="_blank">Hexo</a> Theme <a href="https://github.com/yscoder/hexo-theme-indigo" target="_blank">indigo</a>
+            </span>
+        </p>
+    </div>
+</footer>
+
+    </main>
+    <div class="mask" id="mask"></div>
+<a href="javascript:;" id="gotop" class="waves-effect waves-circle waves-light"><span class="icon icon-lg icon-chevron-up"></span></a>
+
+
+
+<div class="global-share" id="globalShare">
+    <ul class="reset share-icons">
+      <li>
+        <a class="weibo share-sns" target="_blank" href="http://service.weibo.com/share/share.php?url=http://example.com/2024/08/05/%E8%AE%B0%E4%B8%80%E6%AC%A1-opentelemetry-%E6%97%A5%E5%BF%97%E6%89%93%E5%8D%B0-traceId-%E7%BC%BA%E5%A4%B1%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90/&title=《记一次 opentelemetry 日志打印 traceId 缺失问题分析》 — Jerry Chan&pic=http://example.com/img/avatar.jpg" data-title="微博">
+          <i class="icon icon-weibo"></i>
+        </a>
+      </li>
+      <li>
+        <a class="weixin share-sns wxFab" href="javascript:;" data-title="微信">
+          <i class="icon icon-weixin"></i>
+        </a>
+      </li>
+      <li>
+        <a class="qq share-sns" target="_blank" href="http://connect.qq.com/widget/shareqq/index.html?url=http://example.com/2024/08/05/%E8%AE%B0%E4%B8%80%E6%AC%A1-opentelemetry-%E6%97%A5%E5%BF%97%E6%89%93%E5%8D%B0-traceId-%E7%BC%BA%E5%A4%B1%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90/&title=《记一次 opentelemetry 日志打印 traceId 缺失问题分析》 — Jerry Chan&source=" data-title=" QQ">
+          <i class="icon icon-qq"></i>
+        </a>
+      </li>
+      <li>
+        <a class="facebook share-sns" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http://example.com/2024/08/05/%E8%AE%B0%E4%B8%80%E6%AC%A1-opentelemetry-%E6%97%A5%E5%BF%97%E6%89%93%E5%8D%B0-traceId-%E7%BC%BA%E5%A4%B1%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90/" data-title=" Facebook">
+          <i class="icon icon-facebook"></i>
+        </a>
+      </li>
+      <li>
+        <a class="twitter share-sns" target="_blank" href="https://twitter.com/intent/tweet?text=《记一次 opentelemetry 日志打印 traceId 缺失问题分析》 — Jerry Chan&url=http://example.com/2024/08/05/%E8%AE%B0%E4%B8%80%E6%AC%A1-opentelemetry-%E6%97%A5%E5%BF%97%E6%89%93%E5%8D%B0-traceId-%E7%BC%BA%E5%A4%B1%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90/&via=http://example.com" data-title=" Twitter">
+          <i class="icon icon-twitter"></i>
+        </a>
+      </li>
+      <li>
+        <a class="google share-sns" target="_blank" href="https://plus.google.com/share?url=http://example.com/2024/08/05/%E8%AE%B0%E4%B8%80%E6%AC%A1-opentelemetry-%E6%97%A5%E5%BF%97%E6%89%93%E5%8D%B0-traceId-%E7%BC%BA%E5%A4%B1%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90/" data-title=" Google+">
+          <i class="icon icon-google-plus"></i>
+        </a>
+      </li>
+    </ul>
+ </div>
+
+
+<div class="page-modal wx-share" id="wxShare">
+    <a class="close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAT4AAAE+CAAAAAAxUyPsAAAFNElEQVR42u3awW7bMBAE0Pz/T6foubU7Mysjhz6dAscRyccAWs7q6yu+vv+43n/n1Sd/fv/VJ/nfvrrPq++8GuXVWA9c+PDhw4cP31ua98Pnk2hBky3ZmNpREhN8+PDhw4fvwpcUB5fH/7Yllzu0a0no8eHDhw8fvp/iaw//bSmTl1Ptlc8THz58+PDh+1m+95NO7pnfod2kaKlxEwIfPnz48OH7NF9bIuRLSoqSrSW/3TPne7jXgQ8fPnz48JVvYf0/Pz984cOHDx8+fIewewvE85Iif92t/XwLMl6uER8+fPjw4ZvWmD/U809ylDZYr8P0uP2fbxs+fPjw4cN34Utu2sboW4ifTLctLPLvbG0AfPjw4cOHr+VLFrz9nLeW8+/k82w5xqY4Pnz48OHDF888f5Anx+akENmi+fZI3+KOkQE+fPjw4cN3TpvzRnL7eXtoT2aSBx9teFHPDR8+fPjw4QvmtpULbVzeXvkWbjF9G3ZEdR8+fPjw4cM38W2P9i18zwujvIm+teHbOXw9Wxnhw4cPH77/hq+dXD7ws+VCEp3niPkG1O1zfPjw4cOH7y1f2wJ/tqXdlg5tsZKXIGMRhg8fPnz48D10fk8W/GxMn98tL6rasqmu8vDhw4cPH75DQJAULlt0nhzat7/NsdpQIwog8OHDhw8fvg/w5bdri497lL8d+5NiKNoYfPjw4cOHb+JLYvQtOm+Xsb0o1m7GFvH/5XN8+PDhw4ev5Lu8nrUdyPO2+la45I357+kae+z48OHDhw9fGaNv7fOtEGkP81sRts3wZd2HDx8+fPjwPcTXLridaN4kKBrYcWv/tCX48OHDhw/f9DSPcoWJeIvO24KmLa3uI+LDhw8fPnwbXxuR54u5lBd5wz557ewS30cNcnz48OHDh687a3/dJ7dxtD9vG7NtwFhy4cOHDx8+fEFYkITjbUFzCQjyAuKpGbZ3+0uvAx8+fPjw4Sv52qXmcUNSTHzi+lxYXycl+PDhw4cP3zkUSI7iT5Ug+T3zbW7Xjg8fPnz48D3L1x62t+GTLdla1/fiKV8vPnz48OHDd+fbHurtkO8LiKJoeCi22P5F/tHrwIcPHz58+KbOdb74JD64F0xtpP4sEz58+PDhw3fn2w7hWwnSficft43739+z2FR8+PDhw4fvwNcWEC3rVkA81Q7Pi6dkFHz48OHDh2/jy2/UlhHtb/P5bDOM2t5bAIEPHz58+PA9ytdOom2cbwtODvxJX+Kyhfjw4cOHD1/Llze588ldQv9LAXEJ+sfoAR8+fPjw4ZvS8jwWT6Z+D/fvjfZ747wI8fHhw4cPH76YLxny3gLfGvDb/fMT/TaHurePDx8+fPjwHQbYioDtVbA8XGgb3peVFokLPnz48OHD99Dz9xNh/VbE5Lh59JCvHR8+fPjw4dv42sf/vaV9acZ/rmw6FUn48OHDhw9fwLe1pfMB7m3vhOBy+D/9K+DDhw8fPnwTX3vIb4uSFv1yQm+Dj7Zcw4cPHz58+J7lezYW3yAuG5MH9HlB8/KfCR8+fPjw4dvrkMda6RtcG7XnWG2J0zby8eHDhw8fvpavfcw/VRbkY+V8SUsgaY3nd8OHDx8+fPg2vrawSBrMbWTfhubba3PPlm748OHDhw/f5/ja8uJ+pM+j/O/DdWqo48OHDx8+fB/ji47QhxC/PeRfXnrLsf5BjA8fPnz48E1820N9a0sn388P/1vof58/Pnz48OHDt/FtL5Ml5UUeoG8FxP38nv/tKe7Hhw8fPnz4fl+/AORhAsFxscoJAAAAAElFTkSuQmCC" alt="微信分享二维码">
+</div>
+
+
+
+
+    <script src="//cdn.bootcss.com/node-waves/0.7.4/waves.min.js"></script>
+<script>
+var BLOG = { ROOT: '/', SHARE: true, REWARD: false };
+
+
+</script>
+
+<script src="//unpkg.com/hexo-theme-material-indigo@latest/js/main.min.js"></script>
+
+
+<div class="search-panel" id="search-panel">
+    <ul class="search-result" id="search-result"></ul>
+</div>
+<template id="search-tpl">
+<li class="item">
+    <a href="{path}" class="waves-block waves-effect">
+        <div class="title ellipsis" title="{title}">{title}</div>
+        <div class="flex-row flex-middle">
+            <div class="tags ellipsis">
+                {tags}
+            </div>
+            <time class="flex-col time">{date}</time>
+        </div>
+    </a>
+</li>
+</template>
+
+<script src="//unpkg.com/hexo-theme-material-indigo@latest/js/search.min.js" async></script>
+
+
+
+
+
+
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+<script>
+(function() {
+    var OriginTitile = document.title, titleTime;
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            document.title = '大爷别走呀！';
+            clearTimeout(titleTime);
+        } else {
+            document.title = '来啦，老弟!';
+            titleTime = setTimeout(function() {
+                document.title = OriginTitile;
+            },2000);
+        }
+    });
+})();
+</script>
+
+
+
+</body>
+</html>
