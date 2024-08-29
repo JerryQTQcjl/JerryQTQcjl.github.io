@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+
+    
+
+    
+
+
+
+    <meta charset="utf-8">
+    
+    
+    
+    
+    <title>nacos spring 热更新 | Jerry Chan</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    
+    <meta name="theme-color" content="#3F51B5">
+    
+    
+    <meta name="keywords" content="nacos">
+    <meta name="description" content="前言nacos 热更新主要分为全局环境变量热更新和局部 Bean 字段热更新，分别由 @NacosPropertySource 和 @NacosValue 的 autoRefreshed 字段控制，接下来分别看看原理。 全局环境变量热更新全局环境变量热更新由 @NacosPropertySource 的 autoRefreshed 字段控制，接下来看看源码。 1234567891011121314">
+<meta property="og:type" content="article">
+<meta property="og:title" content="nacos spring 热更新">
+<meta property="og:url" content="http://example.com/2024/08/30/nacos-spring-%E7%83%AD%E6%9B%B4%E6%96%B0/index.html">
+<meta property="og:site_name" content="Jerry Chan">
+<meta property="og:description" content="前言nacos 热更新主要分为全局环境变量热更新和局部 Bean 字段热更新，分别由 @NacosPropertySource 和 @NacosValue 的 autoRefreshed 字段控制，接下来分别看看原理。 全局环境变量热更新全局环境变量热更新由 @NacosPropertySource 的 autoRefreshed 字段控制，接下来看看源码。 1234567891011121314">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-08-29T16:05:05.000Z">
+<meta property="article:modified_time" content="2024-08-29T16:06:10.264Z">
+<meta property="article:author" content="Jerry Chan">
+<meta property="article:tag" content="nacos">
+<meta name="twitter:card" content="summary">
+    
+        <link rel="alternate" type="application/atom+xml" title="Jerry Chan" href="/atom.xml">
+    
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="stylesheet" href="//unpkg.com/hexo-theme-material-indigo@latest/css/style.css">
+    <script>window.lazyScripts=[]</script>
+
+    <!-- custom head -->
+    
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body>
+    <div id="loading" class="active"></div>
+
+    <aside id="menu" class="hide" >
+  <div class="inner flex-row-vertical">
+    <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="menu-off">
+        <i class="icon icon-lg icon-close"></i>
+    </a>
+    <div class="brand-wrap" style="background-image:url(/img/brand.jpg)">
+      <div class="brand">
+        <a href="/" class="avatar waves-effect waves-circle waves-light">
+          <img src="/img/avatar.jpg">
+        </a>
+        <hgroup class="introduce">
+          <h5 class="nickname">Jerry Chan</h5>
+          <a href="mailto:jerrtqtqcjl@gmail.com" title="jerrtqtqcjl@gmail.com" class="mail">jerrtqtqcjl@gmail.com</a>
+        </hgroup>
+      </div>
+    </div>
+    <div class="scroll-wrap flex-col">
+      <ul class="nav">
+        
+            <li class="waves-block waves-effect">
+              <a href="/"  >
+                <i class="icon icon-lg icon-home"></i>
+                主页
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/archives"  >
+                <i class="icon icon-lg icon-archives"></i>
+                归档
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/tags"  >
+                <i class="icon icon-lg icon-tags"></i>
+                标签
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/categories"  >
+                <i class="icon icon-lg icon-th-list"></i>
+                目录
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="https://github.com/JerryQTQcjl" target="_blank" >
+                <i class="icon icon-lg icon-github"></i>
+                Github
+              </a>
+            </li>
+        
+      </ul>
+    </div>
+  </div>
+</aside>
+
+    <main id="main">
+        <header class="top-header" id="header">
+    <div class="flex-row">
+        <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light on" id="menu-toggle">
+          <i class="icon icon-lg icon-navicon"></i>
+        </a>
+        <div class="flex-col header-title ellipsis">nacos spring 热更新</div>
+        
+        <div class="search-wrap" id="search-wrap">
+            <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="back">
+                <i class="icon icon-lg icon-chevron-left"></i>
+            </a>
+            <input type="text" id="key" class="search-input" autocomplete="off" placeholder="输入感兴趣的关键字">
+            <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="search">
+                <i class="icon icon-lg icon-search"></i>
+            </a>
+        </div>
+        
+        
+        <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="menuShare">
+            <i class="icon icon-lg icon-share-alt"></i>
+        </a>
+        
+    </div>
+</header>
+<header class="content-header post-header">
+
+    <div class="container fade-scale">
+        <h1 class="title">nacos spring 热更新</h1>
+        <h5 class="subtitle">
+            
+                <time datetime="2024-08-29T16:05:05.000Z" itemprop="datePublished" class="page-time">
+  2024-08-30
+</time>
+
+
+            
+        </h5>
+    </div>
+
+    
+
+
+</header>
+
+
+<div class="container body-wrap">
+    
+    <aside class="post-widget">
+        <nav class="post-toc-wrap post-toc-shrink" id="post-toc">
+            <h4>TOC</h4>
+            <ol class="post-toc"><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#前言"><span class="post-toc-number">1.</span> <span class="post-toc-text">前言</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#全局环境变量热更新"><span class="post-toc-number">2.</span> <span class="post-toc-text">全局环境变量热更新</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#局部-Bean-字段热更新"><span class="post-toc-number">3.</span> <span class="post-toc-text">局部 Bean 字段热更新</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#更新事件接送"><span class="post-toc-number">4.</span> <span class="post-toc-text">更新事件接送</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#总结"><span class="post-toc-number">5.</span> <span class="post-toc-text">总结</span></a></li></ol>
+        </nav>
+    </aside>
+
+
+<article id="post-nacos-spring-热更新"
+  class="post-article article-type-post fade" itemprop="blogPost">
+
+    <div class="post-card">
+        <h1 class="post-card-title">nacos spring 热更新</h1>
+        <div class="post-meta">
+            <time class="post-time" title="2024-08-30 00:05:05" datetime="2024-08-29T16:05:05.000Z"  itemprop="datePublished">2024-08-30</time>
+
+            
+
+
+            
+<span id="busuanzi_container_page_pv" title="文章总阅读量" style='display:none'>
+    <i class="icon icon-eye icon-pr"></i><span id="busuanzi_value_page_pv"></span>
+</span>
+
+
+        </div>
+        <div class="post-content" id="post-content" itemprop="postContent">
+            <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>nacos 热更新主要分为全局环境变量热更新和局部 Bean 字段热更新，分别由 @NacosPropertySource 和 @NacosValue 的 autoRefreshed 字段控制，接下来分别看看原理。</p>
+<h3 id="全局环境变量热更新"><a href="#全局环境变量热更新" class="headerlink" title="全局环境变量热更新"></a>全局环境变量热更新</h3><p>全局环境变量热更新由 @NacosPropertySource 的 autoRefreshed 字段控制，接下来看看源码。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// com.alibaba.nacos.spring.core.env.NacosPropertySourcePostProcessor#doProcessPropertySource</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">doProcessPropertySource</span><span class="params">(String beanName, BeanDefinition beanDefinition)</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 根据注解或者xml配置解析bean对象中配置的配置源</span></span><br><span class="line">        List&lt;NacosPropertySource&gt; nacosPropertySources = buildNacosPropertySources(</span><br><span class="line">                beanName, beanDefinition);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Add Orderly</span></span><br><span class="line">        <span class="keyword">for</span> (NacosPropertySource nacosPropertySource : nacosPropertySources) &#123;</span><br><span class="line">            <span class="comment">// 将配置源添加到环境对象中</span></span><br><span class="line">            addNacosPropertySource(nacosPropertySource);</span><br><span class="line">            <span class="comment">// 将NacosPropertySource注解中的非空字符串属性和全局配置合并返回</span></span><br><span class="line">            Properties properties = configServiceBeanBuilder</span><br><span class="line">                    .resolveProperties(nacosPropertySource.getAttributesMetadata());</span><br><span class="line">            <span class="comment">// 添加配置变更监听器</span></span><br><span class="line">            addListenerIfAutoRefreshed(nacosPropertySource, properties, environment);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// com.alibaba.nacos.spring.core.env.NacosPropertySourcePostProcessor#addListenerIfAutoRefreshed</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">addListenerIfAutoRefreshed</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">            <span class="keyword">final</span> NacosPropertySource nacosPropertySource, <span class="keyword">final</span> Properties properties,</span></span></span><br><span class="line"><span class="function"><span class="params">            <span class="keyword">final</span> ConfigurableEnvironment environment)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 如果NacosPropertySource未开启自动刷新，直接返回</span></span><br><span class="line">        <span class="keyword">if</span> (!nacosPropertySource.isAutoRefreshed()) &#123; <span class="comment">// Disable Auto-Refreshed</span></span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 省略部分代码</span></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            ConfigService configService = nacosServiceFactory.createConfigService(properties);</span><br><span class="line">            Listener listener = <span class="keyword">new</span> AbstractListener() &#123;</span><br><span class="line">                <span class="meta">@Override</span></span><br><span class="line">                <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">receiveConfigInfo</span><span class="params">(String config)</span> </span>&#123;</span><br><span class="line">                    String name = nacosPropertySource.getName();</span><br><span class="line">                    <span class="comment">// 使用新配置数据构建配置员</span></span><br><span class="line">                    NacosPropertySource newNacosPropertySource = <span class="keyword">new</span> NacosPropertySource(</span><br><span class="line">                            dataId, groupId, name, config, type);</span><br><span class="line">                    <span class="comment">// 拷贝旧源配置的元数据</span></span><br><span class="line">                    newNacosPropertySource.copy(nacosPropertySource);</span><br><span class="line">                    MutablePropertySources propertySources = environment</span><br><span class="line">                            .getPropertySources();</span><br><span class="line">                    <span class="comment">// 替换环境对象中的源配置</span></span><br><span class="line">                    propertySources.replace(name, newNacosPropertySource);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;;</span><br><span class="line">      <span class="comment">// 省略部分代码</span></span><br><span class="line">            configService.addListener(dataId, groupId, listener);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">catch</span> (NacosException e) &#123;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>从上面的代码可以看到，@NacosPropertySource 的 autoRefreshed 字段仅控制环境对象中的配置源更新。</p>
+<h3 id="局部-Bean-字段热更新"><a href="#局部-Bean-字段热更新" class="headerlink" title="局部 Bean 字段热更新"></a>局部 Bean 字段热更新</h3><p>接下来看看局部 Bean 字段更新，局部 Bean 字段更新主要由  @NacosValue 的 autoRefreshed 字段控制，接下来同样看看源码。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// com.alibaba.nacos.spring.context.annotation.config.NacosValueAnnotationBeanPostProcessor</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> Object <span class="title">postProcessBeforeInitialization</span><span class="params">(Object bean, <span class="keyword">final</span> String beanName)</span></span></span><br><span class="line"><span class="function">        <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">    doWithFields(bean, beanName);</span><br><span class="line">    doWithMethods(bean, beanName);</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">super</span>.postProcessBeforeInitialization(bean, beanName);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// com.alibaba.nacos.spring.context.annotation.config.NacosValueAnnotationBeanPostProcessor#doWithFields</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">doWithFields</span><span class="params">(<span class="keyword">final</span> Object bean, <span class="keyword">final</span> String beanName)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 解析bean对象中字段的NacosValue注解</span></span><br><span class="line">    ReflectionUtils.doWithFields(bean.getClass(),</span><br><span class="line">            <span class="keyword">new</span> ReflectionUtils.FieldCallback() &#123;</span><br><span class="line">                <span class="meta">@Override</span></span><br><span class="line">                <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">doWith</span><span class="params">(Field field)</span> <span class="keyword">throws</span> IllegalArgumentException </span>&#123;</span><br><span class="line">                    NacosValue annotation = getAnnotation(field, NacosValue<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">                    doWithAnnotation(beanName, bean, annotation, field.getModifiers(),</span><br><span class="line">                            <span class="keyword">null</span>, field);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// com.alibaba.nacos.spring.context.annotation.config.NacosValueAnnotationBeanPostProcessor#doWithAnnotation</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">doWithAnnotation</span><span class="params">(String beanName, Object bean, NacosValue annotation,</span></span></span><br><span class="line"><span class="function"><span class="params">            <span class="keyword">int</span> modifiers, Method method, Field field)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (annotation != <span class="keyword">null</span>) &#123;</span><br><span class="line">          <span class="comment">// 静态字段不处理</span></span><br><span class="line">            <span class="keyword">if</span> (Modifier.isStatic(modifiers)) &#123;</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 开启自动刷新</span></span><br><span class="line">            <span class="keyword">if</span> (annotation.autoRefreshed()) &#123;</span><br><span class="line">              <span class="comment">// 解析占位符</span></span><br><span class="line">                String placeholder = resolvePlaceholder(annotation.value());</span><br><span class="line">        <span class="comment">// 将占位符，bean对象，字段信息等缓存在内存中</span></span><br><span class="line">                NacosValueTarget nacosValueTarget = <span class="keyword">new</span> NacosValueTarget(bean, beanName,</span><br><span class="line">                        method, field, annotation.value());</span><br><span class="line">                put2ListMap(placeholderNacosValueTargetMap, placeholder,</span><br><span class="line">                        nacosValueTarget);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>从上述代码中可以看到，在 Bean 对象初始化前，会解析对象中添加了 @NacosValue 的字段或者方法，并将相关的字段、对象、注解信息缓存在内存中。接下来看看这些字段是如何实现热更新的。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// com.alibaba.nacos.spring.context.annotation.config.NacosValueAnnotationBeanPostProcessor#onApplicationEvent</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onApplicationEvent</span><span class="params">(NacosConfigReceivedEvent event)</span> </span>&#123;</span><br><span class="line">        <span class="comment">// In to this event receiver, the environment has been updated the</span></span><br><span class="line">        <span class="comment">// latest configuration information, pull directly from the environment</span></span><br><span class="line">        <span class="comment">// fix issue #142</span></span><br><span class="line">        <span class="keyword">for</span> (Map.Entry&lt;String, List&lt;NacosValueTarget&gt;&gt; entry : placeholderNacosValueTargetMap</span><br><span class="line">                .entrySet()) &#123;</span><br><span class="line">            String key = environment.resolvePlaceholders(entry.getKey());</span><br><span class="line">            <span class="comment">// 从环境变量中取出，因为环境变量更新是在事件发布之前应用事件发布前完成的</span></span><br><span class="line">            <span class="comment">// 所以此处获取到的值是已经更新完成之后的数据</span></span><br><span class="line">            String newValue = environment.getProperty(key);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (newValue == <span class="keyword">null</span>) &#123;</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            List&lt;NacosValueTarget&gt; beanPropertyList = entry.getValue();</span><br><span class="line">            <span class="keyword">for</span> (NacosValueTarget target : beanPropertyList) &#123;</span><br><span class="line">              <span class="comment">// 比较新旧数据md5校验和</span></span><br><span class="line">                String md5String = MD5Utils.md5Hex(newValue, <span class="string">"UTF-8"</span>);</span><br><span class="line">                <span class="keyword">boolean</span> isUpdate = !target.lastMD5.equals(md5String);</span><br><span class="line">                <span class="keyword">if</span> (isUpdate) &#123;</span><br><span class="line">                    target.updateLastMD5(md5String);</span><br><span class="line">                    Object evaluatedValue = resolveNotifyValue(target.nacosValueExpr, key, newValue);</span><br><span class="line">                    <span class="comment">// 更新bean对象字段或方法</span></span><br><span class="line">                    <span class="keyword">if</span> (target.method == <span class="keyword">null</span>) &#123;</span><br><span class="line">                        setField(target, evaluatedValue);</span><br><span class="line">                    &#125;</span><br><span class="line">                    <span class="keyword">else</span> &#123;</span><br><span class="line">                        setMethod(target, evaluatedValue);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到，当接收到配置变更事件时，会遍历内存中的需要自动更新的 Bean 字段信息，对比 MD5 校验和，如果发现存在变更，则更新 Bean 字段或方法。（此处存在一个疑问，每接收到一个事件都会遍历所有 Bean 字段信息，效率是否较低？）</p>
+<p>这里还有一个点需要注意，新的配置数据是直接从环境对象中取出的，这也意味着 @NacosValue 字段的自动更新是会受 @NacosPropertySource 自动更新的影响的。如果 @NacosPropertySource  未开启自动更新，即使 @NacosValue 开启自动更新最终还是无法更新。</p>
+<h3 id="更新事件接送"><a href="#更新事件接送" class="headerlink" title="更新事件接送"></a>更新事件接送</h3><p>接下来再来验证一下上面所说的，全局环境变量的更新是局部 Bean 字段更新之前完成的。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// com.alibaba.nacos.client.config.impl.CacheData#safeNotifyListener</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">safeNotifyListener</span><span class="params">(<span class="keyword">final</span> String dataId, <span class="keyword">final</span> String group, <span class="keyword">final</span> String content, <span class="keyword">final</span> String type,</span></span></span><br><span class="line"><span class="function"><span class="params">            <span class="keyword">final</span> String md5, <span class="keyword">final</span> String encryptedDataKey, <span class="keyword">final</span> ManagerListenerWrap listenerWrap)</span> </span>&#123;</span><br><span class="line">  </span><br><span class="line">    NotifyTask job = <span class="keyword">new</span> NotifyTask() &#123;</span><br><span class="line">        </span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">long</span> start = System.currentTimeMillis();</span><br><span class="line">            ClassLoader myClassLoader = Thread.currentThread().getContextClassLoader();</span><br><span class="line">            ClassLoader appClassLoader = listener.getClass().getClassLoader();</span><br><span class="line">            ScheduledFuture&lt;?&gt; timeSchedule = <span class="keyword">null</span>;</span><br><span class="line">            </span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="comment">// 省略部分代码</span></span><br><span class="line">                timeSchedule = getNotifyBlockMonitor().schedule(</span><br><span class="line">                        <span class="keyword">new</span> LongNotifyHandler(listener.getClass().getSimpleName(), dataId, group, tenant, md5,</span><br><span class="line">                                notifyWarnTimeout, Thread.currentThread()), notifyWarnTimeout,</span><br><span class="line">                        TimeUnit.MILLISECONDS);</span><br><span class="line">                listenerWrap.inNotifying = <span class="keyword">true</span>;</span><br><span class="line">                listener.receiveConfigInfo(contentTmp);</span><br><span class="line">                <span class="comment">// 省略部分代码</span></span><br><span class="line">            &#125; <span class="keyword">catch</span> (NacosException ex) &#123;</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">            &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;;</span><br><span class="line">    <span class="comment">// 省略部分代码</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// com.alibaba.nacos.spring.context.event.config.DelegatingEventPublishingListener#receiveConfigInfo</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">receiveConfigInfo</span><span class="params">(String content)</span> </span>&#123;</span><br><span class="line">    onReceived(content);</span><br><span class="line">    publishEvent(content);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// com.alibaba.nacos.spring.context.event.config.DelegatingEventPublishingListener#publishEvent</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">publishEvent</span><span class="params">(String content)</span> </span>&#123;</span><br><span class="line">    NacosConfigReceivedEvent event = <span class="keyword">new</span> NacosConfigReceivedEvent(configService,</span><br><span class="line">            dataId, groupId, content, configType);</span><br><span class="line">    applicationEventPublisher.publishEvent(event);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// com.alibaba.nacos.spring.context.event.config.DelegatingEventPublishingListener#onReceived</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">onReceived</span><span class="params">(String content)</span> </span>&#123;</span><br><span class="line">        delegate.receiveConfigInfo(content);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到，先执行 Nacos 原生监听器的 receiveConfigInfo 方法，再发布应用事件。</p>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ol>
+<li>@NacosPropertySource 的 autoRefreshed 字段控制全局环境变量的更新。</li>
+<li>@NacosValue 的 autoRefreshed 字段控制局部 Bean 对象字段更新。</li>
+<li>Bean 对象字段更新还是会受到 @NacosPropertySource 的 autoRefreshed 字段的影响，只有 @NacosPropertySource 和 @NacosValue 同时开启自动刷新才能真正自动更新。</li>
+</ol>
+
+        </div>
+
+        <blockquote class="post-copyright">
+    
+    <div class="content">
+        
+<span class="post-time">
+    最后更新时间：<time datetime="2024-08-29T16:06:10.264Z" itemprop="dateUpdated">2024-08-30 00:06:10</time>
+</span><br>
+
+
+        
+    </div>
+    
+    <footer>
+        <a href="http://example.com">
+            <img src="/img/avatar.jpg" alt="Jerry Chan">
+            Jerry Chan
+        </a>
+    </footer>
+</blockquote>
+
+        
+
+
+        <div class="post-footer">
+            
+	<ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/nacos/" rel="tag">nacos</a></li></ul>
+
+
+            
+<div class="page-share-wrap">
+    
+
+<div class="page-share" id="pageShare">
+    <ul class="reset share-icons">
+      <li>
+        <a class="weibo share-sns" target="_blank" href="http://service.weibo.com/share/share.php?url=http://example.com/2024/08/30/nacos-spring-%E7%83%AD%E6%9B%B4%E6%96%B0/&title=《nacos spring 热更新》 — Jerry Chan&pic=http://example.com/img/avatar.jpg" data-title="微博">
+          <i class="icon icon-weibo"></i>
+        </a>
+      </li>
+      <li>
+        <a class="weixin share-sns wxFab" href="javascript:;" data-title="微信">
+          <i class="icon icon-weixin"></i>
+        </a>
+      </li>
+      <li>
+        <a class="qq share-sns" target="_blank" href="http://connect.qq.com/widget/shareqq/index.html?url=http://example.com/2024/08/30/nacos-spring-%E7%83%AD%E6%9B%B4%E6%96%B0/&title=《nacos spring 热更新》 — Jerry Chan&source=" data-title=" QQ">
+          <i class="icon icon-qq"></i>
+        </a>
+      </li>
+      <li>
+        <a class="facebook share-sns" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http://example.com/2024/08/30/nacos-spring-%E7%83%AD%E6%9B%B4%E6%96%B0/" data-title=" Facebook">
+          <i class="icon icon-facebook"></i>
+        </a>
+      </li>
+      <li>
+        <a class="twitter share-sns" target="_blank" href="https://twitter.com/intent/tweet?text=《nacos spring 热更新》 — Jerry Chan&url=http://example.com/2024/08/30/nacos-spring-%E7%83%AD%E6%9B%B4%E6%96%B0/&via=http://example.com" data-title=" Twitter">
+          <i class="icon icon-twitter"></i>
+        </a>
+      </li>
+      <li>
+        <a class="google share-sns" target="_blank" href="https://plus.google.com/share?url=http://example.com/2024/08/30/nacos-spring-%E7%83%AD%E6%9B%B4%E6%96%B0/" data-title=" Google+">
+          <i class="icon icon-google-plus"></i>
+        </a>
+      </li>
+    </ul>
+ </div>
+
+
+
+    <a href="javascript:;" id="shareFab" class="page-share-fab waves-effect waves-circle">
+        <i class="icon icon-share-alt icon-lg"></i>
+    </a>
+</div>
+
+
+
+        </div>
+    </div>
+
+    
+<nav class="post-nav flex-row flex-justify-between flex-row-reverse">
+  
+
+  
+    <div class="waves-block waves-effect next">
+      <a href="/2024/08/07/%E4%B8%80%E4%B8%AA%E6%9F%A5%E8%AF%A2%E8%AF%AD%E5%8F%A5%E5%9C%A8-ShardingJDBC-%E4%B8%AD%E9%83%BD%E5%8F%91%E7%94%9F%E4%BA%86%E5%95%A5/" id="post-next" class="post-nav-link">
+        <div class="tips">Next <i class="icon icon-angle-right icon-lg icon-pl"></i></div>
+        <h4 class="title">一个查询语句在 ShardingJDBC 中都发生了啥</h4>
+      </a>
+    </div>
+  
+</nav>
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</article>
+
+
+
+</div>
+
+        <footer class="footer">
+    <div class="top">
+        
+<p>
+    <span id="busuanzi_container_site_uv" style='display:none'>
+        站点总访客数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span id="busuanzi_container_site_pv" style='display:none'>
+        站点总访问量：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</p>
+
+
+        <p>
+            
+                <span><a href="/atom.xml" target="_blank" class="rss" title="rss"><i class="icon icon-lg icon-rss"></i></a></span>
+            
+            <span>博客内容遵循 <a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" target="_blank">知识共享 署名 - 非商业性 - 相同方式共享 4.0 国际协议</a></span>
+        </p>
+    </div>
+    <div class="bottom">
+        <p><span>Jerry Chan &copy; 2023 - 2024</span>
+            <span>
+                
+                Power by <a href="http://hexo.io/" target="_blank">Hexo</a> Theme <a href="https://github.com/yscoder/hexo-theme-indigo" target="_blank">indigo</a>
+            </span>
+        </p>
+    </div>
+</footer>
+
+    </main>
+    <div class="mask" id="mask"></div>
+<a href="javascript:;" id="gotop" class="waves-effect waves-circle waves-light"><span class="icon icon-lg icon-chevron-up"></span></a>
+
+
+
+<div class="global-share" id="globalShare">
+    <ul class="reset share-icons">
+      <li>
+        <a class="weibo share-sns" target="_blank" href="http://service.weibo.com/share/share.php?url=http://example.com/2024/08/30/nacos-spring-%E7%83%AD%E6%9B%B4%E6%96%B0/&title=《nacos spring 热更新》 — Jerry Chan&pic=http://example.com/img/avatar.jpg" data-title="微博">
+          <i class="icon icon-weibo"></i>
+        </a>
+      </li>
+      <li>
+        <a class="weixin share-sns wxFab" href="javascript:;" data-title="微信">
+          <i class="icon icon-weixin"></i>
+        </a>
+      </li>
+      <li>
+        <a class="qq share-sns" target="_blank" href="http://connect.qq.com/widget/shareqq/index.html?url=http://example.com/2024/08/30/nacos-spring-%E7%83%AD%E6%9B%B4%E6%96%B0/&title=《nacos spring 热更新》 — Jerry Chan&source=" data-title=" QQ">
+          <i class="icon icon-qq"></i>
+        </a>
+      </li>
+      <li>
+        <a class="facebook share-sns" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http://example.com/2024/08/30/nacos-spring-%E7%83%AD%E6%9B%B4%E6%96%B0/" data-title=" Facebook">
+          <i class="icon icon-facebook"></i>
+        </a>
+      </li>
+      <li>
+        <a class="twitter share-sns" target="_blank" href="https://twitter.com/intent/tweet?text=《nacos spring 热更新》 — Jerry Chan&url=http://example.com/2024/08/30/nacos-spring-%E7%83%AD%E6%9B%B4%E6%96%B0/&via=http://example.com" data-title=" Twitter">
+          <i class="icon icon-twitter"></i>
+        </a>
+      </li>
+      <li>
+        <a class="google share-sns" target="_blank" href="https://plus.google.com/share?url=http://example.com/2024/08/30/nacos-spring-%E7%83%AD%E6%9B%B4%E6%96%B0/" data-title=" Google+">
+          <i class="icon icon-google-plus"></i>
+        </a>
+      </li>
+    </ul>
+ </div>
+
+
+<div class="page-modal wx-share" id="wxShare">
+    <a class="close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAN4AAADeCAAAAAB3DOFrAAACsUlEQVR42u3aS27jQAwFwNz/0h5gdgFG8nuk2pkApZXhj7pLAZoMya+v+Hr9va7ev/r0/m75b2erfOHh4eEd471ur/sFkneu7nC/VvKd+z3j4eHhnebdB4N8c/vA075+Y8HDw8P7UV5+0CfhZJaI4+Hh4f123n2CW6e/eHh4eL+Kl2yxrZHmgSF/KAdrLXh4eHjPnMYPFAtOvD7Y38PDw8NbdNXzAzcPJHmBeLbDb3fDw8PDO8DLW/jtKMCsjLsJCcV/DHh4eHhr3v5nM2ReIJ6VlfHw8PDO8WbupFCbfLMthbTBCQ8PD+9Z3qZ9tWHn223v/22HeHh4eAd45xZuiwjtfeowg4eHh3eANyuntsvMxqRmg1x4eHh453hJA2w2cvpUKTZv0Q1HB/Dw8PAWvLzBn6fgz45w1c02PDw8vEd5yWBoXkidFTLu1x3OOySxBQ8PD2/Nm0WVTdhoA0M7rICHh4d3jpdsok1q81CRjCbkRYrLoSs8PDy8A7zZ0FXbymrz3k0Sj4eHh/cZ3rNJbd4ey3dSNOHw8PDwjvHyosDsm7M2WFs+vkyp8fDw8A7zNs2tffK9+fQypcbDw8M7zMuP8sca/GViXQQzPDw8vMO8TSkhKb/uxxHyEQQ8PDy8c7x9O6ourQb3aVcsggceHh7emlc348tH0BY4EkCyNzw8PLzP8GaF2rYl1qbUm4EwPDw8vBO8lpEXc/Pybl4sXl14eHh4D/Fe5ZUf3PsAk7fBipQaDw8Pb81rz9g2gU6GDNr0ehOE8PDw8J7i5cFgdjS3+DwIRX8GPDw8vGO8TdOrfTTtrzZBCw8PD+9neZtrVpjYlJXx8PDw/n9eW4Zoj/skbPzjfTw8PLxjvFkx4rHEt+z4F2vh4eHhfXqtN8d0XmbN0+thANhPnOHh4eG95/0BtYXFOkCE+RQAAAAASUVORK5CYII=" alt="微信分享二维码">
+</div>
+
+
+
+
+    <script src="//cdn.bootcss.com/node-waves/0.7.4/waves.min.js"></script>
+<script>
+var BLOG = { ROOT: '/', SHARE: true, REWARD: false };
+
+
+</script>
+
+<script src="//unpkg.com/hexo-theme-material-indigo@latest/js/main.min.js"></script>
+
+
+<div class="search-panel" id="search-panel">
+    <ul class="search-result" id="search-result"></ul>
+</div>
+<template id="search-tpl">
+<li class="item">
+    <a href="{path}" class="waves-block waves-effect">
+        <div class="title ellipsis" title="{title}">{title}</div>
+        <div class="flex-row flex-middle">
+            <div class="tags ellipsis">
+                {tags}
+            </div>
+            <time class="flex-col time">{date}</time>
+        </div>
+    </a>
+</li>
+</template>
+
+<script src="//unpkg.com/hexo-theme-material-indigo@latest/js/search.min.js" async></script>
+
+
+
+
+
+
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+<script>
+(function() {
+    var OriginTitile = document.title, titleTime;
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            document.title = '大爷别走呀！';
+            clearTimeout(titleTime);
+        } else {
+            document.title = '来啦，老弟!';
+            titleTime = setTimeout(function() {
+                document.title = OriginTitile;
+            },2000);
+        }
+    });
+})();
+</script>
+
+
+
+</body>
+</html>
