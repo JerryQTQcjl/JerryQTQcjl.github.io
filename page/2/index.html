@@ -148,6 +148,64 @@
     <ul class="post-list">
     
         <li class="post-list-item fade">
+            <article id="post-kafka-消费者高-cpu-问题排查"
+  class="article-card article-type-post" itemprop="blogPost">
+
+    <div class="post-meta">
+        <time class="post-time" title="2023-04-14 23:31:22" datetime="2023-04-14T15:31:22.000Z"  itemprop="datePublished">2023-04-14</time>
+
+        
+
+
+    </div>
+
+    
+
+
+  
+    <h3 class="post-title" itemprop="name">
+      <a class="post-title-link" href="/2023/04/14/kafka-%E6%B6%88%E8%B4%B9%E8%80%85%E9%AB%98-cpu-%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/">kafka 消费者高 cpu 问题排查</a>
+    </h3>
+  
+
+
+
+
+    <div class="post-content" id="post-content" itemprop="postContent">
+
+    
+        
+今天本来打算愉快的划水，运维小哥突然找我说测试环境应用 cpu 一直居高不下，我一看告警还真是…
+
+cpu 高问题排查思路首先还是老套路：
+先查看 cpu 高的线程是哪些
+
+1top -Hp &lt;pid&gt;
+
+
+
+
+查看线程的堆栈信息
+
+12345//将线程 id 转换为 16 进制printf '%x\n' &lt;tid&gt;//获取线程号后 50 行堆栈信息jstack &...
+    
+
+        <a href="/2023/04/14/kafka-%E6%B6%88%E8%B4%B9%E8%80%85%E9%AB%98-cpu-%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/" class="post-more waves-effect waves-button">
+            阅读全文…
+        </a>
+    </div>
+    
+    <div class="post-footer">
+        
+	<ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/kafka/" rel="tag">kafka</a></li></ul>
+
+    </div>
+    
+</article>
+
+        </li>
+    
+        <li class="post-list-item fade">
             <article id="post-wireshark-抓包-java应用中的-https-请求"
   class="article-card article-type-post" itemprop="blogPost">
 
